@@ -19,7 +19,7 @@ concurrency:
 jobs:
   test:
     name: Test (includes SAST CodeQL and SCA Dependabot)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -64,7 +64,7 @@ jobs:
 
       - name: Summarize CodeQL results
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           SECURITY_TAB: ${{ github.server_url }}/${{ github.repository }}/security
           SCAN_START: ${{ steps.codeql-start.outputs.time }}
@@ -72,8 +72,8 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const securityTab = process.env.SECURITY_TAB;
-            const start = new Date(process.env.SCAN_START).getTime();
-            const elapsed = Math.max(0, Math.round((Date.now() - start) / 1000));
+            const start = Number(new Date(process.env.SCAN_START));
+            const elapsed = Number.isFinite(start) ? Math.max(0, Math.round((Date.now() - start) / 1000)) : 0;
 
             let alerts = [];
             let note = "";
@@ -100,6 +100,13 @@ jobs:
             const secs = elapsed % 60;
             const duration = `${mins}m ${String(secs).padStart(2, "0")}s`;
 
+            const counts = note
+              ? note.replace(/^> /, "")
+              : `${tags.security} open alert(s) \u00B7 ${tags.maintainability} maintainability \u00B7 ${tags.reliability} reliability`;
+            console.log(`\u{1F6E1}\uFE0F SAST (CodeQL) Analysis \u2014 \u2705 Completed ${finished} (${duration})`);
+            console.log(counts);
+            console.log(`View results: ${securityTab}/code-scanning`);
+
             const summary = core.summary
               .addHeading(`\u{1F6E1}\uFE0F SAST (CodeQL) Analysis`, 3)
               .addRaw(`\u2705 Completed ${finished} (${duration})\n\n`);
@@ -118,7 +125,7 @@ jobs:
 
       - name: Summarize Dependabot results
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           SECURITY_TAB: ${{ github.server_url }}/${{ github.repository }}/security
         with:
@@ -153,6 +160,13 @@ jobs:
             const mins = Math.floor(elapsed / 60);
             const secs = elapsed % 60;
             const duration = `${mins}m ${String(secs).padStart(2, "0")}s`;
+
+            const counts = note
+              ? note.replace(/^> /, "")
+              : `${open.length} open alert(s) \u00B7 ${closed.length} closed alert(s)`;
+            console.log(`\u{1F4E6} SCA (Dependabot) Dependency Scan \u2014 \u2705 Completed ${finished} (${duration})`);
+            console.log(counts);
+            console.log(`View results: ${securityTab}/dependabot`);
 
             const summary = core.summary
               .addHeading(`\u{1F4E6} SCA (Dependabot) Dependency Scan`, 3)
