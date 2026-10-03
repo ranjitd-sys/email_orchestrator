@@ -1,0 +1,143 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "27 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security:
+    name: SAST (CodeQL) + SCA (Dependabot)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:javascript-typescript
+
+      - name: Summarize CodeQL results
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          SECURITY_TAB: ${{ github.server_url }}/${{ github.repository }}/security
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const sha = context.sha.substring(0, 7);
+            const securityTab = process.env.SECURITY_TAB;
+
+            let alerts = [];
+            let note = "";
+            try {
+              alerts = await github.paginate(github.rest.codeScanning.listAlertsForRepo, {
+                owner,
+                repo,
+                state: "open",
+                per_page: 100,
+              });
+            } catch (error) {
+              note = `> Could not read code scanning alerts with the workflow token (HTTP ${error.status}). Code scanning on private repositories requires GitHub Advanced Security.`;
+            }
+
+            const severity = {};
+            for (const alert of alerts) {
+              const level = alert.rule?.security_severity_level || alert.rule?.severity || "unknown";
+              severity[level] = (severity[level] || 0) + 1;
+            }
+
+            const summary = core.summary
+              .addHeading("SAST (CodeQL) Analysis", 3)
+              .addRaw(`CodeQL analysis completed for \`${sha}\`.\n\n`);
+
+            if (note) {
+              summary.addRaw(`${note}\n\n`);
+            } else if (alerts.length === 0) {
+              summary.addRaw("**0 open alerts.**\n\n");
+            } else {
+              summary.addTable([
+                [{ data: "Severity", header: true }, { data: "Open alerts", header: true }],
+                ...Object.entries(severity)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([level, count]) => [level, String(count)]),
+              ]);
+              summary.addRaw(`\n**${alerts.length} open alert(s).**\n\n`);
+            }
+
+            await summary
+              .addRaw(`[View results →](${securityTab}/code-scanning)\n`)
+              .write();
+
+      - name: Summarize Dependabot results
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          SECURITY_TAB: ${{ github.server_url }}/${{ github.repository }}/security
+        with:
+          github-token: ${{ secrets.DEPENDABOT_ALERTS_TOKEN || github.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const securityTab = process.env.SECURITY_TAB;
+
+            let open = null;
+            let closed = null;
+            let note = "";
+            try {
+              open = await github.paginate(github.rest.dependabot.listAlertsForRepo, {
+                owner,
+                repo,
+                state: "open",
+                per_page: 100,
+              });
+              closed = await github.paginate(github.rest.dependabot.listAlertsForRepo, {
+                owner,
+                repo,
+                state: "closed",
+                per_page: 100,
+              });
+            } catch (error) {
+              note = `> Could not read Dependabot alerts with the workflow token (HTTP ${error.status}). Ensure Dependabot alerts are enabled; reading them may require a token with Dependabot alerts read access.`;
+            }
+
+            const summary = core.summary
+              .addHeading("SCA (Dependabot) Dependency Scan", 3)
+              .addRaw("Dependabot monitors this repository's dependency graph.\n\n");
+
+            if (note) {
+              summary.addRaw(`${note}\n\n`);
+            } else {
+              summary.addTable([
+                [{ data: "State", header: true }, { data: "Alerts", header: true }],
+                ["Open", String(open.length)],
+                ["Closed", String(closed.length)],
+              ]);
+              summary.addRaw("\n");
+            }
+
+            await summary
+              .addRaw(`[View results →](${securityTab}/dependabot)\n`)
+              .write();

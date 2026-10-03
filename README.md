@@ -70,9 +70,28 @@ deployment target with no local build step, so it is deployed with Alchemy
 PostgreSQL, network access, or secrets; all tests are hermetic.
 
 `.github/dependabot.yml` tracks `bun`, `github-actions`, and `docker`
-(the root `docker-compose.yml`) weekly. Code scanning is configured through
-GitHub's CodeQL **Default Setup** in repository settings rather than a
-version-controlled workflow.
+(the root `docker-compose.yml`) weekly.
+
+### Security workflow
+
+`.github/workflows/security.yml` runs CodeQL (advanced setup) on pushes, pull
+requests, a weekly schedule, and manually. After the analysis it queries the
+code scanning and Dependabot alert APIs and writes **SAST (CodeQL)** and
+**SCA (Dependabot)** result cards into the run's job summary, each linking to the
+Security tab. The Dependabot card needs Dependabot alerts enabled; the CodeQL
+card needs code scanning enabled. On private repositories both require GitHub
+Advanced Security.
+
+The CodeQL card reads the code scanning API with the built-in `GITHUB_TOKEN`
+(`security-events: write`). The Dependabot card reads the Dependabot alerts API,
+which the built-in token cannot access; add a repository secret named
+`DEPENDABOT_ALERTS_TOKEN` (a classic PAT with the `security_events` scope, or a
+fine-grained PAT with **Dependabot alerts: read**) to populate it. Without the
+secret the card renders a short explanatory note instead of failing the job.
+
+Because this workflow uses **advanced setup**, do not also enable CodeQL
+**Default Setup** for this repository — GitHub rejects a repository that has both
+for the same language.
 
 ### Worker (Cloudflare, via Alchemy)
 
