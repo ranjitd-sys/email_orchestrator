@@ -32,7 +32,7 @@ export interface SendPayload {
   subject: string;
   html?: string;
   text?: string;
-  tags?: string[];
+  tags?: Record<string, string>;
   headers?: Record<string, string>;
 }
 

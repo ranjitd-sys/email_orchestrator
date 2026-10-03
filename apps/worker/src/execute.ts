@@ -1,5 +1,5 @@
 import type { EmailSender, SendPayload } from "@email/shared";
-import { BrevoPermanentError } from "./brevo.ts";
+import { PermanentSendError } from "./email/errors.ts";
 
 export type SendOutcome = "sent" | "retry" | "failed";
 
@@ -8,11 +8,18 @@ export async function sendJob(payload: SendPayload, sender: EmailSender): Promis
     await sender.sendEmail(payload);
     return "sent";
   } catch (error) {
-    if (error instanceof BrevoPermanentError) {
-      console.error("permanent send failure", { actionId: payload.actionId, error });
+    if (error instanceof PermanentSendError) {
+      console.error("permanent send failure", {
+        actionId: payload.actionId,
+        sendAttemptId: payload.sendAttemptId,
+        error,
+      });
       return "failed";
     }
-    console.error("transient send failure", { actionId: payload.actionId, error });
+    console.error("transient send failure", {
+      actionId: payload.actionId,
+      error,
+    });
     return "retry";
   }
 }

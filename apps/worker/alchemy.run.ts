@@ -11,8 +11,9 @@ const WORKER = Cloudflare.Worker("Worker", {
   compatibility: { date: "2026-09-30" },
   observability: { enabled: true },
   env: {
+    EMAIL_PROVIDER: "mock",
+    RESEND_API_KEY: Redacted.make(""),
     BREVO_API_KEY: Redacted.make(""),
-    BREVO_MOCK: "true",
   },
 });
 

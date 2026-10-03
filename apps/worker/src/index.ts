@@ -1,5 +1,5 @@
 import type { SendPayload } from "@email/shared";
-import { createEmailSender } from "./brevo.ts";
+import { createEmailSender } from "./email/index.ts";
 import { sendJob } from "./execute.ts";
 import type { Env } from "../alchemy.run.ts";
 

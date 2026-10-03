@@ -59,8 +59,8 @@ id,sprint,sprint_days,phase,task,why,spec_ref,acceptance_tests,priority,estimate
 58,12,2026-11-04..2026-11-05,Phase 6 - CF Worker,wrangler.jsonc: queue consumer binding DLQ nodejs_compat,,P6,,critical,2,done,,2,Superseded by Alchemy: apps/worker/alchemy.run.ts declares Queue+DLQ+Worker+Consumer
 59,13,2026-11-06..2026-11-09,Phase 6 - CF Worker,queue(batch env ctx) handler with per-message try/catch,One bad message must not fail the batch,S6,,critical,3,done,,58,src/index.ts queue() handler: sendJob -> ack/retry per message
 60,13,2026-11-06..2026-11-09,Phase 6 - CF Worker,message.ack() on success and message.retry() on transient failure,Retry is what makes it reliable,S6,,critical,2,done,,59,"execute.ts: sent/failed -> ack, transient/unknown -> retry"
-61,13,2026-11-06..2026-11-09,Phase 6 - CF Worker,Brevo adapter interface + mock implementation,,S13,,critical,3,done,,2,src/brevo.ts: EmailSender iface + BrevoHttpAdapter + MockBrevoAdapter
-62,13,2026-11-06..2026-11-09,Phase 6 - CF Worker,Consume queue then send via Brevo (no callbacks),Worker stays stateless (spec 11),S6,T11,critical,4,done,,54;55;60;61,Worker is stateless: queue message carries full SendPayload; ack/retry only
+61,13,2026-11-06..2026-11-09,Phase 6 - CF Worker,Pluggable email providers (EmailSender interface + factory),,S13,,critical,3,done,,2,"src/email/: errors.ts generic Transient/PermanentSendError, resend.ts, brevo.ts, mock.ts, index.ts factory switching on EMAIL_PROVIDER"
+62,13,2026-11-06..2026-11-09,Phase 6 - CF Worker,Consume queue then send via Brevo (no callbacks),Worker stays stateless (spec 11),S6,T11,critical,4,done,,54;55;60;61,Consumer stays provider-agnostic: sendJob -> ack/retry unchanged when swapping EMAIL_PROVIDER
 63,14,2026-11-10..2026-11-11,Phase 6 - CF Worker,Test T13 concurrency serialized via orchestrator FOR UPDATE,,S14,T13,high,3,todo,,37;62,
 64,14,2026-11-10..2026-11-11,Phase 7 - Hardening,Retry and backoff policy classify transient vs permanent,,S6,,high,3,todo,,60,
 65,14,2026-11-10..2026-11-11,Phase 7 - Hardening,Structured logging,,S16,,medium,3,todo,,3,

@@ -239,12 +239,12 @@ _Phase 6 - CF Worker · 4 tasks · 12 h_
 - [x] **60** message.ack() on success and message.retry() on transient failure
   <sub>Retry is what makes it reliable · spec §6 · **critical** · 2 h · needs 59 (queue(batch env ctx) handler with per-me)</sub>
   > execute.ts: sent/failed -> ack, transient/unknown -> retry
-- [x] **61** Brevo adapter interface + mock implementation
+- [x] **61** Pluggable email providers (EmailSender interface + factory)
   <sub>spec §13 · **critical** · 3 h · needs 2 (Add deps: postgres wrangler typescript @)</sub>
-  > src/brevo.ts: EmailSender iface + BrevoHttpAdapter + MockBrevoAdapter
+  > src/email/: errors.ts generic Transient/PermanentSendError, resend.ts, brevo.ts, mock.ts, index.ts factory switching on EMAIL_PROVIDER
 - [x] **62** Consume queue then send via Brevo (no callbacks)
-  <sub>Worker stays stateless (spec 11) · spec §6 · T11 · **critical** · 4 h · needs 54 (POST /internal/jobs/:actionId/claim with), 55 (POST /internal/jobs/:actionId/result rec), 60 (message.ack() on success and message.ret), 61 (Brevo adapter interface + mock implement)</sub>
-  > Worker is stateless: queue message carries full SendPayload; ack/retry only
+  <sub>Worker stays stateless (spec 11) · spec §6 · T11 · **critical** · 4 h · needs 54 (POST /internal/jobs/:actionId/claim with), 55 (POST /internal/jobs/:actionId/result rec), 60 (message.ack() on success and message.ret), 61 (Pluggable email providers (EmailSender i)</sub>
+  > Consumer stays provider-agnostic: sendJob -> ack/retry unchanged when swapping EMAIL_PROVIDER
 
 ### Sprint 14 — 2026-11-10 → 2026-11-11
 
@@ -262,7 +262,7 @@ _Phase 6 - CF Worker → Phase 7 - Hardening · 3 tasks · 9 h_
 _Phase 7 - Hardening · 3 tasks · 11 h_
 
 - [ ] **66** Real Brevo HTTP adapter + webhook signature verification
-  <sub>spec §13 · medium · 4 h · needs 61 (Brevo adapter interface + mock implement)</sub>
+  <sub>spec §13 · medium · 4 h · needs 61 (Pluggable email providers (EmailSender i)</sub>
 - [ ] **67** Deploy scripts: wrangler deploy + orchestrator service
   <sub>spec P16 · medium · 3 h · needs 58 (wrangler.jsonc: queue consumer binding D), 3 (Create .env.example (DATABASE_URL CLOUDF)</sub>
 - [ ] **68** Concurrency stress tests duplicate and parallel webhooks
@@ -312,5 +312,5 @@ Tasks that block the most downstream work:
 - **58** wrangler.jsonc: queue consumer binding DLQ nodejs_compat — unlocks 2 task(s)
 - **59** queue(batch env ctx) handler with per-message try/catch — unlocks 1 task(s)
 - **60** message.ack() on success and message.retry() on transient failure — unlocks 2 task(s)
-- **61** Brevo adapter interface + mock implementation — unlocks 2 task(s)
+- **61** Pluggable email providers (EmailSender interface + factory) — unlocks 2 task(s)
 - **62** Consume queue then send via Brevo (no callbacks) — unlocks 1 task(s)
