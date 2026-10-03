@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: "27 3 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -15,10 +17,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  typecheck:
-    name: Typecheck
+  test:
+    name: Test (includes SAST CodeQL and SCA Dependabot)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -32,30 +38,142 @@ jobs:
       - name: Typecheck orchestrator
         run: bun run --cwd apps/orchestrator typecheck
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Set up Bun runtime
-        uses: ./.github/actions/setup
-
       - name: Run Bun runtime tests
         run: bun run test:runtime
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Set up Bun runtime
-        uses: ./.github/actions/setup
-
       - name: Run Biome
         run: bun run lint
+
+      - name: Record CodeQL start
+        id: codeql-start
+        run: echo "time=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> "$GITHUB_OUTPUT"
+
+      - name: Initialize CodeQL
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          build-mode: none
+          queries: security-and-quality
+
+      - name: Perform CodeQL Analysis
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:javascript-typescript
+
+      - name: Summarize CodeQL results
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          SECURITY_TAB: ${{ github.server_url }}/${{ github.repository }}/security
+          SCAN_START: ${{ steps.codeql-start.outputs.time }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const securityTab = process.env.SECURITY_TAB;
+            const start = new Date(process.env.SCAN_START).getTime();
+            const elapsed = Math.max(0, Math.round((Date.now() - start) / 1000));
+
+            let alerts = [];
+            let note = "";
+            try {
+              alerts = await github.paginate(github.rest.codeScanning.listAlertsForRepo, {
+                owner,
+                repo,
+                state: "open",
+                per_page: 100,
+              });
+            } catch (error) {
+              note = `> Could not read code scanning alerts (HTTP ${error.status}). Code scanning may need to be enabled in repository settings.`;
+            }
+
+            const tags = { security: 0, maintainability: 0, reliability: 0 };
+            for (const alert of alerts) {
+              const ruleTags = alert.rule?.tags || [];
+              if (ruleTags.includes("maintainability")) tags.maintainability++;
+              else if (ruleTags.includes("reliability")) tags.reliability++;
+              else tags.security++;
+            }
+            const finished = new Date().toISOString().slice(0, 19).replace("T", " ") + " UTC";
+            const mins = Math.floor(elapsed / 60);
+            const secs = elapsed % 60;
+            const duration = `${mins}m ${String(secs).padStart(2, "0")}s`;
+
+            const summary = core.summary
+              .addHeading(`\u{1F6E1}\uFE0F SAST (CodeQL) Analysis`, 3)
+              .addRaw(`\u2705 Completed ${finished} (${duration})\n\n`);
+
+            if (note) {
+              summary.addRaw(`${note}\n\n`);
+            } else {
+              summary.addRaw(
+                `${tags.security} open alert(s) \u00B7 ${tags.maintainability} maintainability \u00B7 ${tags.reliability} reliability\n\n`,
+              );
+            }
+
+            await summary
+              .addRaw(`[View results \u2192](${securityTab}/code-scanning)\n`)
+              .write();
+
+      - name: Record SCA start
+        id: sca-start
+        run: echo "time=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> "$GITHUB_OUTPUT"
+
+      - name: Run dependency audit
+        id: bun-audit
+        continue-on-error: true
+        run: bun audit
+
+      - name: Summarize Dependabot results
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          SECURITY_TAB: ${{ github.server_url }}/${{ github.repository }}/security
+          SCAN_START: ${{ steps.sca-start.outputs.time }}
+        with:
+          github-token: ${{ secrets.DEPENDABOT_ALERTS_TOKEN || github.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const securityTab = process.env.SECURITY_TAB;
+            const start = new Date(process.env.SCAN_START).getTime();
+            const elapsed = Math.max(0, Math.round((Date.now() - start) / 1000));
+
+            let open = null;
+            let closed = null;
+            let note = "";
+            try {
+              open = await github.paginate(github.rest.dependabot.listAlertsForRepo, {
+                owner,
+                repo,
+                state: "open",
+                per_page: 100,
+              });
+              closed = await github.paginate(github.rest.dependabot.listAlertsForRepo, {
+                owner,
+                repo,
+                state: "closed",
+                per_page: 100,
+              });
+            } catch (error) {
+              note = `> Could not read Dependabot alerts (HTTP ${error.status}). Ensure Dependabot alerts are enabled; reading them may require a token with Dependabot alerts read access.`;
+            }
+
+            const finished = new Date().toISOString().slice(0, 19).replace("T", " ") + " UTC";
+            const mins = Math.floor(elapsed / 60);
+            const secs = elapsed % 60;
+            const duration = `${mins}m ${String(secs).padStart(2, "0")}s`;
+
+            const summary = core.summary
+              .addHeading(`\u{1F4E6} SCA (Dependabot) Dependency Scan`, 3)
+              .addRaw(`\u2705 Completed ${finished} (${duration})\n\n`);
+
+            if (note) {
+              summary.addRaw(`${note}\n\n`);
+            } else {
+              summary.addRaw(`${open.length} open alert(s) \u00B7 ${closed.length} closed alert(s)\n\n`);
+            }
+
+            await summary
+              .addRaw(`[View results \u2192](${securityTab}/dependabot)\n`)
+              .write();

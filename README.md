@@ -58,11 +58,11 @@ bun run db:down        # stop the container
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on every push to `main`, every pull request to
-`main`, and on demand. It has three independent jobs — `Typecheck`, `Test`, and
-`Lint` — so a failure points at one concern. Each job checks out the repo, then
-calls the local composite action `.github/actions/setup`, which installs the Bun
+`main`, on a weekly schedule, and on demand. It has a single job —
+`Test (includes SAST CodeQL and SCA Dependabot)` — that checks out the repo,
+calls the local composite action `.github/actions/setup` (which installs the Bun
 version pinned in `.bun-version` and runs a frozen-lockfile install against a
-`bun.lock`-keyed download cache.
+`bun.lock`-keyed download cache), then runs typecheck, tests, and Biome lint.
 
 CI deliberately covers the Bun runtime only. The Worker is a Cloudflare
 deployment target with no local build step, so it is deployed with Alchemy
@@ -72,19 +72,19 @@ PostgreSQL, network access, or secrets; all tests are hermetic.
 `.github/dependabot.yml` tracks `bun`, `github-actions`, and `docker`
 (the root `docker-compose.yml`) weekly.
 
-### Security workflow
+### Security summary
 
-`.github/workflows/security.yml` runs CodeQL (advanced setup) on pushes, pull
-requests, a weekly schedule, and manually. After the analysis it queries the
-code scanning and Dependabot alert APIs and writes **SAST (CodeQL)** and
-**SCA (Dependabot)** result cards into the run's job summary, each linking to the
-Security tab. The Dependabot card needs Dependabot alerts enabled; the CodeQL
-card needs code scanning enabled. On private repositories both require GitHub
-Advanced Security.
+The same job runs CodeQL (advanced setup, `security-and-quality` queries) and a
+non-blocking `bun audit`, then writes **SAST (CodeQL)** and
+**SCA (Dependabot)** cards into the run's job summary, each linking to the
+Security tab. The cards render as Markdown — GitHub does not allow workflow
+files to reproduce native card styling, so they are an information-equivalent
+approximation.
 
 The CodeQL card reads the code scanning API with the built-in `GITHUB_TOKEN`
-(`security-events: write`). The Dependabot card reads the Dependabot alerts API,
-which the built-in token cannot access; add a repository secret named
+(`security-events: write`); code scanning on a public repository is free and
+requires no GitHub Advanced Security. The Dependabot card reads the Dependabot
+alerts API, which the built-in token cannot access; add a repository secret named
 `DEPENDABOT_ALERTS_TOKEN` (a classic PAT with the `security_events` scope, or a
 fine-grained PAT with **Dependabot alerts: read**) to populate it. Without the
 secret the card renders a short explanatory note instead of failing the job.
