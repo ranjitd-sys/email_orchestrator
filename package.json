@@ -10,7 +10,9 @@
   "scripts": {
     "tasks": "node scripts/sync-tasks.js",
     "test": "bun test",
+    "test:runtime": "bun test apps/orchestrator tests",
     "typecheck": "tsc --noEmit",
+    "lint": "biome lint apps/orchestrator packages scripts tests index.ts",
     "check": "bun run typecheck && bun run --cwd apps/orchestrator typecheck && bun run --cwd apps/worker typecheck && bun run test",
     "dev:orchestrator": "bun run --cwd apps/orchestrator src/index.ts",
     "deploy:orchestrator": "bun run --cwd apps/orchestrator deploy",
@@ -24,6 +26,7 @@
     "worker:dev": "bun run --cwd apps/worker dev"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
     "@cloudflare/workers-types": "latest",
     "@types/bun": "latest",
     "typescript": "^5",

@@ -1,5 +1,7 @@
 # Email Orchestrator
 
+[![CI](https://github.com/ranjitd-sys/email_orchestrator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ranjitd-sys/email_orchestrator/actions/workflows/ci.yml)
+
 Two-part email orchestration system implementing the spec in
 `docs/Email_Orchestrator_Final_State_Machine_Developer_Spec.md`.
 
@@ -49,7 +51,28 @@ bun run db:down        # stop the container
 | `bun run check` | Typecheck both apps and run tests |
 | `bun run typecheck` | Typecheck orchestrator + packages only |
 | `bun run test` | Run tests |
+| `bun run test:runtime` | Run the Bun-runtime tests only (what CI runs) |
+| `bun run lint` | Lint the Bun-runtime sources with Biome |
 | `bun run dev:orchestrator` | Start the orchestrator on :3000 |
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `main`, every pull request to
+`main`, and on demand. It has three independent jobs — `Typecheck`, `Test`, and
+`Lint` — so a failure points at one concern. Each job checks out the repo, then
+calls the local composite action `.github/actions/setup`, which installs the Bun
+version pinned in `.bun-version` and runs a frozen-lockfile install against a
+`bun.lock`-keyed download cache.
+
+CI deliberately covers the Bun runtime only. The Worker is a Cloudflare
+deployment target with no local build step, so it is deployed with Alchemy
+(`bun run worker:deploy`) rather than compiled here. Nothing in CI requires
+PostgreSQL, network access, or secrets; all tests are hermetic.
+
+`.github/dependabot.yml` tracks `bun`, `github-actions`, and `docker`
+(the root `docker-compose.yml`) weekly. Code scanning is configured through
+GitHub's CodeQL **Default Setup** in repository settings rather than a
+version-controlled workflow.
 
 ### Worker (Cloudflare, via Alchemy)
 
