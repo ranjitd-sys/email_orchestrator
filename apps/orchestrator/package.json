@@ -1,0 +1,19 @@
+{
+  "name": "@email/orchestrator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "migrate": "bun run src/db/migrate.ts",
+    "typecheck": "tsc --noEmit",
+    "deploy": "echo 'orchestrator deploys to your Bun host (systemd/PM2/Docker)' && exit 1"
+  },
+  "dependencies": {
+    "@email/db": "workspace:*",
+    "@email/shared": "workspace:*",
+    "postgres": "^3.4.5"
+  }
+}

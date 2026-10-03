@@ -1,0 +1,30 @@
+{
+  "name": "@email/root",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "module": "index.ts",
+  "scripts": {
+    "tasks": "node scripts/sync-tasks.js",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "check": "bun run typecheck && bun run --cwd apps/worker typecheck && bun run test",
+    "dev:orchestrator": "bun run --cwd apps/orchestrator src/index.ts",
+    "deploy:orchestrator": "bun run --cwd apps/orchestrator deploy",
+    "worker:plan": "bun run --cwd apps/worker plan",
+    "worker:deploy": "bun run --cwd apps/worker deploy",
+    "worker:dev": "bun run --cwd apps/worker dev"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "latest",
+    "@types/bun": "latest",
+    "typescript": "^5",
+    "wrangler": "^4"
+  },
+  "dependencies": {
+    "postgres": "^3.4.5"
+  }
+}

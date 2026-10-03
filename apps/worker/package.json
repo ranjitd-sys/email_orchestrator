@@ -1,0 +1,23 @@
+{
+  "name": "@email/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "plan": "alchemy plan",
+    "deploy": "alchemy deploy",
+    "dev": "alchemy dev",
+    "destroy": "alchemy destroy",
+    "logs": "alchemy logs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@email/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "^4.0.0",
+    "alchemy": "^2.0.0-beta.80",
+    "effect": "^4.0.0"
+  }
+}

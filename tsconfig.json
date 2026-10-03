@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "target": "ESNext",
+    "module": "Preserve",
+    "moduleDetection": "force",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noPropertyAccessFromIndexSignature": false,
+
+    "types": ["bun"],
+    "paths": {
+      "@email/shared": ["./packages/shared/src/index.ts"],
+      "@email/db": ["./packages/db/src/index.ts"]
+    }
+  },
+  "include": ["scripts/**/*.js", "index.ts", "apps/orchestrator/**/*.ts", "packages/**/*.ts"],
+  "exclude": ["node_modules", "**/dist", "apps/worker", "apps/worker/.wrangler"]
+}

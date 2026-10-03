@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun"]
+  },
+  "include": ["src/**/*.ts", "../../packages/shared/src/**/*.ts", "../../packages/db/src/**/*.ts"],
+  "exclude": ["node_modules"]
+}
