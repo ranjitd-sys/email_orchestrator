@@ -25,13 +25,13 @@ updates:
         patterns:
           - "*"
 
-  - package-ecosystem: docker
+  - package-ecosystem: docker-compose
     directory: /
     schedule:
       interval: weekly
       day: monday
     open-pull-requests-limit: 3
     groups:
-      docker:
+      docker-compose:
         patterns:
           - "*"
