@@ -74,12 +74,14 @@ PostgreSQL, network access, or secrets; all tests are hermetic.
 
 ### Security summary
 
-The same job runs CodeQL (advanced setup, `security-and-quality` queries) and a
-non-blocking `bun audit`, then writes **SAST (CodeQL)** and
+The same job runs CodeQL (advanced setup, `security-and-quality` queries) and
+then writes **SAST (CodeQL)** and
 **SCA (Dependabot)** cards into the run's job summary, each linking to the
 Security tab. The cards render as Markdown — GitHub does not allow workflow
 files to reproduce native card styling, so they are an information-equivalent
-approximation.
+approximation. No dependency scanner runs inside CI; the SCA card reads
+Dependabot alerts directly, keeping the Bun-runtime scope free of Worker-only
+dependency noise.
 
 The CodeQL card reads the code scanning API with the built-in `GITHUB_TOKEN`
 (`security-events: write`); code scanning on a public repository is free and

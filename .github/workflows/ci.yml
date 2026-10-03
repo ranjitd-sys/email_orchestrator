@@ -116,28 +116,17 @@ jobs:
               .addRaw(`[View results \u2192](${securityTab}/code-scanning)\n`)
               .write();
 
-      - name: Record SCA start
-        id: sca-start
-        run: echo "time=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> "$GITHUB_OUTPUT"
-
-      - name: Run dependency audit
-        id: bun-audit
-        continue-on-error: true
-        run: bun audit
-
       - name: Summarize Dependabot results
         if: always()
         uses: actions/github-script@v7
         env:
           SECURITY_TAB: ${{ github.server_url }}/${{ github.repository }}/security
-          SCAN_START: ${{ steps.sca-start.outputs.time }}
         with:
           github-token: ${{ secrets.DEPENDABOT_ALERTS_TOKEN || github.token }}
           script: |
             const { owner, repo } = context.repo;
             const securityTab = process.env.SECURITY_TAB;
-            const start = new Date(process.env.SCAN_START).getTime();
-            const elapsed = Math.max(0, Math.round((Date.now() - start) / 1000));
+            const started = Date.now();
 
             let open = null;
             let closed = null;
@@ -158,6 +147,7 @@ jobs:
             } catch (error) {
               note = `> Could not read Dependabot alerts (HTTP ${error.status}). Ensure Dependabot alerts are enabled; reading them may require a token with Dependabot alerts read access.`;
             }
+            const elapsed = Math.max(0, Math.round((Date.now() - started) / 1000));
 
             const finished = new Date().toISOString().slice(0, 19).replace("T", " ") + " UTC";
             const mins = Math.floor(elapsed / 60);
