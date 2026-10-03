@@ -1,45 +1,17 @@
-import postgres from "postgres";
-import { readdir, readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import * as Redacted from "effect/Redacted";
+import * as Effect from "effect/Effect";
+import * as Migrator from "effect/sql/Migrator";
+import * as PgClient from "@effect/sql-pg/PgClient";
+import init from "../migrations/0001_init.ts";
 
-const migrationsDir = resolve(import.meta.dir, "../migrations");
+const loader = Migrator.fromRecord({ "1_init": init });
 
-export async function runMigrations(url: string, dir = migrationsDir): Promise<string[]> {
-  const sql = postgres(url, { max: 1 });
-  const applied: string[] = [];
-  try {
-    await sql`set client_min_messages to warning`;
-
-    await sql`create table if not exists schema_migrations (
-      version text primary key,
-      applied_at timestamptz not null default now()
-    )`;
-
-    await sql`select pg_advisory_lock(hashtext('email_orchestrator_migrations'))`;
-
-    const files = (await readdir(dir))
-      .filter((f) => f.endsWith(".sql"))
-      .sort();
-
-    const existing = await sql<{ version: string }[]>`select version from schema_migrations`;
-    const done = new Set(existing.map((row) => row.version));
-
-    for (const file of files) {
-      if (done.has(file)) continue;
-      const content = await readFile(resolve(dir, file), "utf8");
-      await sql.begin(async (tx) => {
-        await tx.unsafe(content);
-        await tx`insert into schema_migrations (version) values (${file})`;
-      });
-      applied.push(file);
-    }
-  } finally {
-    await sql`select pg_advisory_unlock(hashtext('email_orchestrator_migrations'))`.catch(
-      () => {},
-    );
-    await sql.end();
-  }
-  return applied;
+export function runMigrations(url: string) {
+  return Effect.scoped(
+    Migrator.make({})({ loader }).pipe(
+      Effect.provide(PgClient.layer({ url: Redacted.make(url) })),
+    ),
+  );
 }
 
 if (import.meta.main) {
@@ -48,8 +20,16 @@ if (import.meta.main) {
     console.error("DATABASE_URL is not set");
     process.exit(1);
   }
-  const applied = await runMigrations(url);
-  console.log(
-    applied.length > 0 ? `applied: ${applied.join(", ")}` : "no pending migrations",
-  );
+  Effect.runPromise(runMigrations(url))
+    .then((migrations) => {
+      console.log(
+        migrations.length > 0
+          ? `applied: ${migrations.map(([id, name]) => `${id}_${name}`).join(", ")}`
+          : "no pending migrations",
+      );
+    })
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
 }

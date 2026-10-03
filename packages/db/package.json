@@ -10,6 +10,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "postgres": "^3.4.5"
+    "@effect/sql-pg": "^4.0.0",
+    "effect": "^4.0.0"
   }
 }

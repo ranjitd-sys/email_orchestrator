@@ -43,3 +43,42 @@ export interface ProviderSendResult {
 export interface EmailSender {
   sendEmail(payload: SendPayload): Promise<ProviderSendResult>;
 }
+
+export const DOMAIN_EVENTS = [
+  "SEND",
+  "OPENED",
+  "UNIQUE_OPENED",
+  "CLICKED",
+  "REPLIED",
+  "DELIVERED",
+  "SENT",
+  "SOFT_BOUNCE",
+  "DEFERRED",
+  "BLOCKED",
+  "HARD_BOUNCE",
+  "SPAM",
+  "UNSUBSCRIBED",
+  "INVALID_EMAIL",
+  "DO_NOT_CONTACT",
+] as const;
+export type DomainEvent = (typeof DOMAIN_EVENTS)[number];
+
+export const SUPPRESSION_EVENTS = [
+  "HARD_BOUNCE",
+  "SPAM",
+  "UNSUBSCRIBED",
+  "INVALID_EMAIL",
+  "DO_NOT_CONTACT",
+] as const;
+export type SuppressionEvent = (typeof SUPPRESSION_EVENTS)[number];
+
+export function isSuppressionEvent(event: DomainEvent): event is SuppressionEvent {
+  return (SUPPRESSION_EVENTS as readonly string[]).includes(event);
+}
+
+export const PROMOTING_EVENTS = ["OPENED", "UNIQUE_OPENED", "CLICKED", "REPLIED"] as const;
+export type PromotingEvent = (typeof PROMOTING_EVENTS)[number];
+
+export function isPromotingEvent(event: DomainEvent): event is PromotingEvent {
+  return (PROMOTING_EVENTS as readonly string[]).includes(event);
+}

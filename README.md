@@ -1,7 +1,7 @@
 # Email Orchestrator
 
 Two-part email orchestration system implementing the spec in
-`docs/Email_Orchestrator_Final_State_Machine_Developer_Spec.docx`.
+`docs/Email_Orchestrator_Final_State_Machine_Developer_Spec.md`.
 
 ## Layout
 
@@ -13,9 +13,11 @@ apps/worker         # Cloudflare Worker: stateless email sender, queue consumer
 docs/               # spec, build plan, task tracker
 ```
 
-The split follows spec §11: the orchestrator owns business state and never calls
-Brevo; the worker only executes sends and never chooses a sequence. They talk
-through Cloudflare Queues, plus two internal HTTP endpoints (`claim`, `result`).
+The split follows spec §11: the orchestrator owns business state and never calls an
+email provider; the worker only executes sends and never chooses a sequence. They
+talk through Cloudflare Queues only — there is no internal API and no Worker → 
+orchestrator callback. The orchestrator publishes the full `SendPayload` and
+correlates provider webhooks back to a send attempt through payload tags.
 
 ## Setup
 
@@ -28,8 +30,9 @@ bun run check           # typecheck both apps + run tests
 ## Local database
 
 A `docker-compose.yml` runs `postgres:16-alpine` on `localhost:5432` with
-database `email_orchestrator`, user/password `email`. Migrations are plain SQL
-in `packages/db/migrations`, applied by a small Bun runner.
+database `email_orchestrator`, user/password `email`. Migrations live in
+`packages/db/migrations` as default-export Effect programs and are applied by
+`effect/sql`'s `Migrator`, which tracks applied versions in `effect_sql_migrations`.
 
 ```bash
 bun run db:up          # start the container (first run pulls the image)
@@ -74,7 +77,18 @@ See `.env.example`. The key ones:
 - `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_QUEUE_ID`, `CLOUDFLARE_API_TOKEN` — the
   orchestrator pushes send jobs to the queue over HTTP; the token needs the
   `Queues Edit` permission
-- `INTERNAL_API_SECRET` — shared secret authenticating Worker → orchestrator calls
+- `EMAIL_PROVIDER`, `RESEND_API_KEY`, `BREVO_API_KEY` — set on the Worker through
+  Alchemy env, not read by the orchestrator
+
+## State machine
+
+Lead engagement lives in one XState v5 machine
+(`apps/orchestrator/src/domain/transition.ts`) covering `NEW`, `NOT_OPENED`,
+`OPENED`, `CLICKED`, `REPLIED` and `SUPPRESSED`. Transitions emit an ordered
+action list (`CREATE_SEQUENCE`, `CANCEL_REMAINING`, `CANCEL_ALL_FUTURE`,
+`SUPPRESS`, `RECORD_ONLY`) that the event processor applies in one transaction.
+Event precedence (suppression → replied → clicked → opened) lives in
+`apps/orchestrator/src/domain/precedence.ts`.
 
 ## Progress
 

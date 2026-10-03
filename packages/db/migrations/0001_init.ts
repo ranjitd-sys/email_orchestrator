@@ -1,3 +1,7 @@
+import * as Effect from "effect/Effect";
+import * as SqlClient from "effect/sql/SqlClient";
+
+const DDL = `
 create table datasets (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -203,3 +207,13 @@ create table experiments (
   split numeric not null default 50 check (split >= 0 and split <= 100),
   created_at timestamptz not null default now()
 );
+`;
+
+export default Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+  for (const statement of DDL.split(";")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)) {
+    yield* sql.unsafe(statement);
+  }
+});
