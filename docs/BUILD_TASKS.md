@@ -7,9 +7,9 @@ Regenerate this file: `bun run tasks`
 |---|---|
 | Sprints | 15 × 2 days |
 | Working days | 30 |
-| Total effort | 187 h |
-| Tasks | 74 |
-| Status | 33 done · 0 in progress · 34 todo |
+| Total effort | 190 h |
+| Tasks | 76 |
+| Status | 34 done · 0 in progress · 28 todo |
 
 **Legend** — `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `[-]` skipped
 
@@ -33,7 +33,7 @@ Regenerate this file: `bun run tasks`
 | 1 | 2026-10-05 → 2026-10-06 | Scaffold + Schema | 7 | 12 h |
 | 2 | 2026-10-07 → 2026-10-08 | Schema | 7 | 12 h |
 | 3 | 2026-10-09 → 2026-10-12 | Schema | 7 | 12 h |
-| 4 | 2026-10-13 → 2026-10-14 | Schema + Domain engine + Event processor | 11 | 22 h |
+| 4 | 2026-10-13 → 2026-10-14 | Schema + Domain engine + Event processor + Scaffold | 13 | 25 h |
 | 5 | 2026-10-15 → 2026-10-16 | Domain engine + Event processor | 7 | 22 h |
 | 6 | 2026-10-19 → 2026-10-20 | Event processor | 5 | 12 h |
 | 7 | 2026-10-21 → 2026-10-22 | Event processor | 5 | 10 h |
@@ -56,13 +56,14 @@ _Phase 0 - Scaffold → Phase 1 - Schema · 7 tasks · 12 h_
 
 - [x] **1** Init Bun workspaces (packages/* apps/*)
   <sub>Everything else lives in a workspace · spec P0 · **critical** · 2 h</sub>
-- [x] **2** Add deps: postgres wrangler typescript @types/bun
+- [x] **2** Add deps: alchemy typescript @types/bun wrangler
   <sub>Orchestrator needs a Postgres driver · spec P0 · **critical** · 1 h · needs 1 (Init Bun workspaces (packages/* apps/*))</sub>
-  > Plus alchemy@2.0.0-beta.80, effect@4.0.0, @effect/platform-node (worker only)
-- [x] **3** Create .env.example (DATABASE_URL CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_QUEUE_ID CLOUDFLARE_API_TOKEN BREVO_API_KEY INTERNAL_API_SECRET)
-  <sub>Secrets must never be committed · spec P0 · **critical** · 1 h · needs 2 (Add deps: postgres wrangler typescript @)</sub>
+  > Orchestrator: effect@4, @effect/sql-pg, @effect/platform-node, xstate@5. Worker: alchemy@2.0.0-beta.80. porsager postgres was dropped once @effect/sql-pg landed.
+- [x] **3** Create .env.example (DATABASE_URL CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_QUEUE_ID CLOUDFLARE_API_TOKEN EMAIL_PROVIDER RESEND_API_KEY BREVO_API_KEY PORT)
+  <sub>Secrets must never be committed · spec P0 · **critical** · 1 h · needs 2 (Add deps: alchemy typescript @types/bun )</sub>
+  > INTERNAL_API_SECRET removed with the callback architecture; worker is callback-free.
 - [x] **4** Add bun test and typecheck scripts
-  <sub>Catch type errors before they compound · spec P0 · high · 1 h · needs 2 (Add deps: postgres wrangler typescript @)</sub>
+  <sub>Catch type errors before they compound · spec P0 · high · 1 h · needs 2 (Add deps: alchemy typescript @types/bun )</sub>
 - [!] **5** Provision hosted Postgres database
   <sub>Source of truth for all 15 tables · spec P0 · **critical** · 4 h</sub>
   > Local Docker Postgres running (docker-compose.yml, port 5432); hosted still pending
@@ -127,13 +128,14 @@ _Phase 1 - Schema · 7 tasks · 12 h_
 
 ### Sprint 4 — 2026-10-13 → 2026-10-14
 
-_Phase 1 - Schema → Phase 2 - Domain engine → Phase 3 - Event processor · 11 tasks · 22 h_
+_Phase 1 - Schema → Phase 2 - Domain engine → Phase 3 - Event processor → Phase 0 - Scaffold · 13 tasks · 25 h_
 
 - [-] **22** Constraint UNIQUE(send_attempt_id)
   <sub>spec §12 · T12 · **critical** · 1 h · needs 13 (Migration: send_attempts (immutable prov), 14 (Migration: email_events (immutable norma)</sub>
   > Kept non-unique on purpose: one attempt legitimately emits many opens/clicks. Per-attempt dedupe comes from UNIQUE(provider_event_id) + event precedence. Revisit only if spec S12 changes.
 - [ ] **23** Idempotency key against duplicate first-step creation
   <sub>Guarantees only one O_1 / C_1 · spec §12 · T03, T04, T05 · **critical** · 3 h · needs 12 (Migration: scheduled_actions (lifecycle ), 20 (Attribution FKs on scheduled_actions and), 21 (Constraint UNIQUE(provider_event_id))</sub>
+  > Partially done: the Resend adapter sends Idempotency-Key = sendAttemptId. Still missing: DB-level guard so a replayed first-step event cannot create a duplicate O_1/C_1 action.
 - [x] **24** Enums: EngagementState (NEW NOT_OPENED OPENED CLICKED REPLIED SUPPRESSED)
   <sub>spec §2 · high · 1 h · needs 6 (Migration: leads (engagement state conta)</sub>
   > ENGAGEMENT_STATES in packages/shared/src/index.ts
@@ -146,8 +148,9 @@ _Phase 1 - Schema → Phase 2 - Domain engine → Phase 3 - Event processor · 1
 - [x] **27** Enums: scheduled action status (SCHEDULED QUEUED PROCESSING SENT RETRY_SCHEDULED CANCELLED FAILED COMPLETED)
   <sub>spec §6 · high · 1 h · needs 12 (Migration: scheduled_actions (lifecycle )</sub>
   > ACTION_STATUSES in packages/shared/src/index.ts
-- [ ] **28** Pure transition() encoding section 3 exact rules
+- [-] **28** Pure transition() encoding section 3 exact rules
   <sub>Core of the whole system (spec 3) · spec §3 · **critical** · 4 h · needs 24 (Enums: EngagementState (NEW NOT_OPENED O), 25 (Enums: event types (SEND OPENED UNIQUE_O)</sub>
+  > Superseded by 69: transitions now live in an XState v5 machine, not a hand-rolled switch.
 - [x] **69** XState v5 machine for lead engagement states (NEW/NOT_OPENED/OPENED/CLICKED/REPLIED/SUPPRESSED)
   <sub>Single declarative source of truth for section 3 transitions and emitted actions · spec §3 · **critical** · 3 h · needs 24 (Enums: EngagementState (NEW NOT_OPENED O), 25 (Enums: event types (SEND OPENED UNIQUE_O)</sub>
   > apps/orchestrator/src/domain/transition.ts uses setup/createMachine; transition() drives it with createActor + machine.resolveState
@@ -160,23 +163,34 @@ _Phase 1 - Schema → Phase 2 - Domain engine → Phase 3 - Event processor · 1
 - [x] **72** Orchestrator Effect boot: app-scope PgClient pool plus Bun.serve /health with DB ping
   <sub>Proves the Effect runtime and DB wiring before adding webhook routes · spec §11 · high · 2 h · needs 71 (Effect SQL migrator (Migrator.fromRecord)</sub>
   > Single Layer.build scope held for the process lifetime; /health returns db:true against local Postgres
+- [x] **75** Fix per-package tsconfig extends and wire orchestrator typecheck into root check
+  <sub>A self-referencing tsconfig made the orchestrator project unloadable and its typecheck never ran · spec P0 · high · 1 h</sub>
+  > apps/orchestrator/tsconfig.json extended itself; root check now runs all three tsc passes
+- [ ] **76** Wire SendPayload tags into the Cloudflare Queues publisher envelope
+  <sub>Webhooks correlate back to a send attempt only if the tags survive the queue round trip · spec §11 · high · 2 h · needs 51 (Cloudflare Queues HTTP publisher POST ac)</sub>
+  > Decision: no callbacks, tags are the only correlation channel; verify Resend echoes them on webhook events
 
 ### Sprint 5 — 2026-10-15 → 2026-10-16
 
 _Phase 2 - Domain engine → Phase 3 - Event processor · 7 tasks · 22 h_
 
-- [ ] **29** Event precedence section 4 + never downgrade
+- [-] **29** Event precedence section 4 + never downgrade
   <sub>Late events must not downgrade · spec §4 · T06 · **critical** · 2 h · needs 28 (Pure transition() encoding section 3 exa)</sub>
-- [ ] **30** Unit tests: full section 3 transition table (all rows)
+  > Superseded by 69/70: precedence.ts still applies ranking, but the transition rules come from the machine.
+- [-] **30** Unit tests: full section 3 transition table (all rows)
   <sub>Proves every rule row by row · spec §3 · **critical** · 3 h · needs 28 (Pure transition() encoding section 3 exa)</sub>
-- [ ] **31** Unit tests: precedence and no-downgrade cases
+  > Superseded by 70: transition.test.ts covers the same table against the XState machine.
+- [-] **31** Unit tests: precedence and no-downgrade cases
   <sub>spec §4 · T06 · **critical** · 2 h · needs 29 (Event precedence section 4 + never downg)</sub>
-- [ ] **32** Unit tests: branch-switch scenario from spec
+  > Superseded by 70: precedence.test.ts covers ranking and no-downgrade.
+- [-] **32** Unit tests: branch-switch scenario from spec
   <sub>spec §8 · T04, T05, T07 · high · 2 h · needs 29 (Event precedence section 4 + never downg), 30 (Unit tests: full section 3 transition ta)</sub>
-- [ ] **33** Webhook route POST /webhooks/brevo
+  > Superseded by 70: branch-switch.test.ts covers NOT_OPENED -> OPENED -> CLICKED -> REPLIED.
+- [-] **33** Webhook route POST /webhooks/brevo
   <sub>Entry point for Brevo events · spec §5 · **critical** · 3 h · needs 28 (Pure transition() encoding section 3 exa), 29 (Event precedence section 4 + never downg), 30 (Unit tests: full section 3 transition ta)</sub>
+  > Deferred: Resend webhook path lands first (73). Brevo route follows the same normalizer.
 - [ ] **73** Resend webhook normalization to DomainEvent using SendPayload.tags correlation
-  <sub>Turns provider payloads into the events the XState machine consumes · spec §12 · T03, T12 · **critical** · 5 h · needs 33 (Webhook route POST /webhooks/brevo), 37 (Load lead + SELECT FOR UPDATE to seriali), 69 (XState v5 machine for lead engagement st)</sub>
+  <sub>Turns provider payloads into the events the XState machine consumes · spec §12 · T03, T12 · **critical** · 5 h · needs 69 (XState v5 machine for lead engagement st)</sub>
   > Resend first, Brevo later; tags carry actionId/sendAttemptId/leadId/datasetId
 - [ ] **74** Transactionally persist email_events, leads.engagement_state, job_transitions and action side effects
   <sub>Webhook effects must be atomic or replay corrupts state · spec §12 · T12 · **critical** · 5 h · needs 73 (Resend webhook normalization to DomainEv)</sub>
@@ -186,10 +200,11 @@ _Phase 2 - Domain engine → Phase 3 - Event processor · 7 tasks · 22 h_
 
 _Phase 3 - Event processor · 5 tasks · 12 h_
 
-- [ ] **34** Validate and normalize Brevo payload into internal event
+- [-] **34** Validate and normalize Brevo payload into internal event
   <sub>spec §5 · T13 · **critical** · 3 h · needs 25 (Enums: event types (SEND OPENED UNIQUE_O), 33 (Webhook route POST /webhooks/brevo)</sub>
+  > Deferred: Resend normalization lands first (73); Brevo reuses the same DomainEvent output.
 - [ ] **35** Persist raw provider event before business processing
-  <sub>spec §5 · **critical** · 2 h · needs 14 (Migration: email_events (immutable norma), 34 (Validate and normalize Brevo payload int)</sub>
+  <sub>spec §5 · **critical** · 2 h · needs 14 (Migration: email_events (immutable norma), 73 (Resend webhook normalization to DomainEv)</sub>
 - [ ] **36** Resolve send_attempt via provider message id and correlation data
   <sub>spec §5 · T14, T10 · **critical** · 2 h · needs 13 (Migration: send_attempts (immutable prov), 35 (Persist raw provider event before busine)</sub>
 - [ ] **37** Load lead + SELECT FOR UPDATE to serialize concurrent webhooks
@@ -202,9 +217,9 @@ _Phase 3 - Event processor · 5 tasks · 12 h_
 _Phase 3 - Event processor · 5 tasks · 10 h_
 
 - [ ] **39** Evaluate suppression first else REPLIED then CLICKED then OPENED
-  <sub>spec §3 · **critical** · 2 h · needs 28 (Pure transition() encoding section 3 exa), 29 (Event precedence section 4 + never downg)</sub>
+  <sub>spec §3 · **critical** · 2 h · needs 69 (XState v5 machine for lead engagement st)</sub>
 - [ ] **40** Never downgrade current engagement state
-  <sub>spec §4 · T06 · **critical** · 1 h · needs 29 (Event precedence section 4 + never downg)</sub>
+  <sub>spec §4 · T06 · **critical** · 1 h · needs 69 (XState v5 machine for lead engagement st)</sub>
 - [ ] **41** Cancel all future scheduled actions of old active sequence
   <sub>spec §3 · T02, T04, T05 · **critical** · 3 h · needs 12 (Migration: scheduled_actions (lifecycle ), 39 (Evaluate suppression first else REPLIED )</sub>
 - [ ] **42** Create first scheduled action of new sequence only once
@@ -219,7 +234,7 @@ _Phase 3 - Event processor · 2 tasks · 11 h_
 - [ ] **44** Commit atomically: state + cancel + create + audit
   <sub>All-or-nothing per spec 12 · spec §12 · T13 · **critical** · 3 h · needs 41 (Cancel all future scheduled actions of o), 42 (Create first scheduled action of new seq), 43 (Write job_transitions audit record), 37 (Load lead + SELECT FOR UPDATE to seriali)</sub>
 - [ ] **45** Tests T03 T04 T05 T06 T07 T08 T09 T10 T12
-  <sub>spec §14 · **critical** · 8 h · needs 44 (Commit atomically: state + cancel + crea), 32 (Unit tests: branch-switch scenario from )</sub>
+  <sub>spec §14 · **critical** · 8 h · needs 44 (Commit atomically: state + cancel + crea), 70 (Transition-table, precedence and branch-)</sub>
 
 ### Sprint 9 — 2026-10-27 → 2026-10-28
 
@@ -248,7 +263,7 @@ _Phase 4 - Scheduler + sequences · 3 tasks · 11 h_
 _Phase 5 - Queue producer + internal API · 3 tasks · 11 h_
 
 - [ ] **51** Cloudflare Queues HTTP publisher POST accounts/queues/messages
-  <sub>Bridge from Bun to the CF Queue · spec §11 · **critical** · 4 h · needs 2 (Add deps: postgres wrangler typescript @), 3 (Create .env.example (DATABASE_URL CLOUDF)</sub>
+  <sub>Bridge from Bun to the CF Queue · spec §11 · **critical** · 4 h · needs 2 (Add deps: alchemy typescript @types/bun ), 3 (Create .env.example (DATABASE_URL CLOUDF)</sub>
 - [-] **53** Push actionId only when action is due
   <sub>spec §11 · **critical** · 2 h · needs 46 (Due-sweep over scheduled_actions where S), 52 (Tests T01 T02 T15)</sub>
   > Superseded: worker is callback-free and queue carries full SendPayload, not actionId. Producer will publish full payload when action is due.
@@ -270,7 +285,7 @@ _Phase 5 - Queue producer + internal API → Phase 6 - CF Worker · 4 tasks · 1
   <sub>spec §14 · high · 4 h · needs 54 (POST /internal/jobs/:actionId/claim with), 55 (POST /internal/jobs/:actionId/result rec)</sub>
   > T11 (callback cancel test) superseded by tag-correlated webhook flow. T14 remains tracked under 63/68.
 - [x] **58** wrangler.jsonc: queue consumer binding DLQ nodejs_compat
-  <sub>spec P6 · **critical** · 2 h · needs 2 (Add deps: postgres wrangler typescript @)</sub>
+  <sub>spec P6 · **critical** · 2 h · needs 2 (Add deps: alchemy typescript @types/bun )</sub>
   > Superseded by Alchemy: apps/worker/alchemy.run.ts declares Queue+DLQ+Worker+Consumer
 
 ### Sprint 13 — 2026-11-06 → 2026-11-09
@@ -284,7 +299,7 @@ _Phase 6 - CF Worker · 4 tasks · 12 h_
   <sub>Retry is what makes it reliable · spec §6 · **critical** · 2 h · needs 59 (queue(batch env ctx) handler with per-me)</sub>
   > execute.ts: sent/failed -> ack, transient/unknown -> retry
 - [x] **61** Pluggable email providers (EmailSender interface + factory)
-  <sub>spec §13 · **critical** · 3 h · needs 2 (Add deps: postgres wrangler typescript @)</sub>
+  <sub>spec §13 · **critical** · 3 h · needs 2 (Add deps: alchemy typescript @types/bun )</sub>
   > src/email/: errors.ts generic Transient/PermanentSendError, resend.ts, brevo.ts, mock.ts, index.ts factory switching on EMAIL_PROVIDER
 - [x] **62** Consume queue then send via Brevo (no callbacks)
   <sub>Worker stays stateless (spec 11) · spec §6 · T11 · **critical** · 4 h · needs 54 (POST /internal/jobs/:actionId/claim with), 55 (POST /internal/jobs/:actionId/result rec), 60 (message.ack() on success and message.ret), 61 (Pluggable email providers (EmailSender i)</sub>
@@ -307,6 +322,7 @@ _Phase 7 - Hardening · 3 tasks · 11 h_
 
 - [ ] **66** Real Brevo HTTP adapter + webhook signature verification
   <sub>spec §13 · medium · 4 h · needs 61 (Pluggable email providers (EmailSender i)</sub>
+  > Sender half done (apps/worker/src/email/brevo.ts, 18 provider tests). Still todo: orchestrator-side Brevo webhook signature verification, sequenced after Resend.
 - [ ] **67** Deploy scripts: wrangler deploy + orchestrator service
   <sub>spec P16 · medium · 3 h · needs 58 (wrangler.jsonc: queue consumer binding D), 3 (Create .env.example (DATABASE_URL CLOUDF)</sub>
 - [ ] **68** Concurrency stress tests duplicate and parallel webhooks
@@ -319,8 +335,8 @@ _Phase 7 - Hardening · 3 tasks · 11 h_
 Tasks that block the most downstream work:
 
 - **1** Init Bun workspaces (packages/* apps/*) — unlocks 1 task(s)
-- **2** Add deps: postgres wrangler typescript @types/bun — unlocks 5 task(s)
-- **3** Create .env.example (DATABASE_URL CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_QUEUE_ID CLOUDFLARE_API_TOKEN BREVO_API_KEY INTERNAL_API_SECRET) — unlocks 4 task(s)
+- **2** Add deps: alchemy typescript @types/bun wrangler — unlocks 5 task(s)
+- **3** Create .env.example (DATABASE_URL CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_QUEUE_ID CLOUDFLARE_API_TOKEN EMAIL_PROVIDER RESEND_API_KEY BREVO_API_KEY PORT) — unlocks 4 task(s)
 - **5** Provision hosted Postgres database — unlocks 14 task(s)
 - **6** Migration: leads (engagement state contact identity suppression) — unlocks 4 task(s)
 - **10** Migration: sequence_steps (order N_DAYS delay template conditions) — unlocks 3 task(s)
@@ -331,14 +347,13 @@ Tasks that block the most downstream work:
 - **20** Attribution FKs on scheduled_actions and send_attempts — unlocks 1 task(s)
 - **21** Constraint UNIQUE(provider_event_id) — unlocks 2 task(s)
 - **23** Idempotency key against duplicate first-step creation — unlocks 1 task(s)
-- **28** Pure transition() encoding section 3 exact rules — unlocks 4 task(s)
-- **29** Event precedence section 4 + never downgrade — unlocks 5 task(s)
+- **28** Pure transition() encoding section 3 exact rules — unlocks 3 task(s)
+- **29** Event precedence section 4 + never downgrade — unlocks 3 task(s)
 - **30** Unit tests: full section 3 transition table (all rows) — unlocks 2 task(s)
-- **33** Webhook route POST /webhooks/brevo — unlocks 2 task(s)
-- **34** Validate and normalize Brevo payload into internal event — unlocks 1 task(s)
+- **33** Webhook route POST /webhooks/brevo — unlocks 1 task(s)
 - **35** Persist raw provider event before business processing — unlocks 2 task(s)
 - **36** Resolve send_attempt via provider message id and correlation data — unlocks 1 task(s)
-- **37** Load lead + SELECT FOR UPDATE to serialize concurrent webhooks — unlocks 4 task(s)
+- **37** Load lead + SELECT FOR UPDATE to serialize concurrent webhooks — unlocks 3 task(s)
 - **39** Evaluate suppression first else REPLIED then CLICKED then OPENED — unlocks 3 task(s)
 - **41** Cancel all future scheduled actions of old active sequence — unlocks 2 task(s)
 - **42** Create first scheduled action of new sequence only once — unlocks 1 task(s)
@@ -350,6 +365,7 @@ Tasks that block the most downstream work:
 - **48** Per-step configurable N_DAYS — unlocks 1 task(s)
 - **49** Interruption on OPENED CLICKED REPLIED SUPPRESSED cancels remaining steps — unlocks 1 task(s)
 - **52** Tests T01 T02 T15 — unlocks 2 task(s)
+- **51** Cloudflare Queues HTTP publisher POST accounts/queues/messages — unlocks 1 task(s)
 - **53** Push actionId only when action is due — unlocks 1 task(s)
 - **54** POST /internal/jobs/:actionId/claim with section 6 re-check + render + mark PROCESSING — unlocks 3 task(s)
 - **55** POST /internal/jobs/:actionId/result record SENT RETRY_SCHEDULED or FAILED — unlocks 2 task(s)
@@ -358,5 +374,6 @@ Tasks that block the most downstream work:
 - **60** message.ack() on success and message.retry() on transient failure — unlocks 2 task(s)
 - **61** Pluggable email providers (EmailSender interface + factory) — unlocks 2 task(s)
 - **62** Consume queue then send via Brevo (no callbacks) — unlocks 1 task(s)
-- **69** XState v5 machine for lead engagement states (NEW/NOT_OPENED/OPENED/CLICKED/REPLIED/SUPPRESSED) — unlocks 2 task(s)
-- **73** Resend webhook normalization to DomainEvent using SendPayload.tags correlation — unlocks 1 task(s)
+- **69** XState v5 machine for lead engagement states (NEW/NOT_OPENED/OPENED/CLICKED/REPLIED/SUPPRESSED) — unlocks 4 task(s)
+- **70** Transition-table, precedence and branch-switch tests over the XState machine — unlocks 1 task(s)
+- **73** Resend webhook normalization to DomainEvent using SendPayload.tags correlation — unlocks 2 task(s)
