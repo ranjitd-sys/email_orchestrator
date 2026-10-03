@@ -3,8 +3,7 @@ import {
   ACTION_STATUSES,
   ENGAGEMENT_STATES,
   SEQUENCE_TYPES,
-  type SendJobMessage,
-  type SendResult,
+  type SendPayload,
 } from "@email/shared";
 
 describe("workspace scaffold", () => {
@@ -29,7 +28,6 @@ describe("shared contracts", () => {
   });
 
   test("sequence types are the outbound ones only", () => {
-    // REPLIED and SUPPRESSED have no outbound steps (spec section 7).
     expect(SEQUENCE_TYPES).toEqual(["NOT_OPENED", "OPENED", "CLICKED"]);
   });
 
@@ -39,13 +37,16 @@ describe("shared contracts", () => {
     expect(ACTION_STATUSES).toHaveLength(8);
   });
 
-  test("queue message carries only the action id", () => {
-    const msg: SendJobMessage = { actionId: "act_123" };
-    expect(Object.keys(msg)).toEqual(["actionId"]);
-  });
-
-  test("send result statuses are the three outcomes", () => {
-    const results: SendResult["status"][] = ["SENT", "RETRY_SCHEDULED", "FAILED"];
-    expect(results).toHaveLength(3);
+  test("queue message carries everything needed to send", () => {
+    const payload: SendPayload = {
+      actionId: "act_1",
+      sendAttemptId: "attempt_1",
+      to: "lead@example.com",
+      from: "sender@example.com",
+      subject: "Hello",
+      html: "<p>Hi</p>",
+    };
+    expect(payload.to).toBe("lead@example.com");
+    expect(payload.subject).toBe("Hello");
   });
 });

@@ -9,7 +9,7 @@ Regenerate this file: `bun run tasks`
 | Working days | 30 |
 | Total effort | 167 h |
 | Tasks | 68 |
-| Status | 5 done · 0 in progress · 62 todo |
+| Status | 9 done · 0 in progress · 58 todo |
 
 **Legend** — `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `[-]` skipped
 
@@ -233,21 +233,25 @@ _Phase 5 - Queue producer + internal API → Phase 6 - CF Worker · 4 tasks · 1
 
 _Phase 6 - CF Worker · 4 tasks · 12 h_
 
-- [ ] **59** queue(batch env ctx) handler with per-message try/catch
+- [x] **59** queue(batch env ctx) handler with per-message try/catch
   <sub>One bad message must not fail the batch · spec §6 · **critical** · 3 h · needs 58 (wrangler.jsonc: queue consumer binding D)</sub>
-- [ ] **60** message.ack() on success and message.retry() on transient failure
+  > src/index.ts queue() handler: sendJob -> ack/retry per message
+- [x] **60** message.ack() on success and message.retry() on transient failure
   <sub>Retry is what makes it reliable · spec §6 · **critical** · 2 h · needs 59 (queue(batch env ctx) handler with per-me)</sub>
-- [ ] **61** Brevo adapter interface + mock implementation
+  > execute.ts: sent/failed -> ack, transient/unknown -> retry
+- [x] **61** Brevo adapter interface + mock implementation
   <sub>spec §13 · **critical** · 3 h · needs 2 (Add deps: postgres wrangler typescript @)</sub>
-- [ ] **62** Claim then send then result flow
+  > src/brevo.ts: EmailSender iface + BrevoHttpAdapter + MockBrevoAdapter
+- [x] **62** Consume queue then send via Brevo (no callbacks)
   <sub>Worker stays stateless (spec 11) · spec §6 · T11 · **critical** · 4 h · needs 54 (POST /internal/jobs/:actionId/claim with), 55 (POST /internal/jobs/:actionId/result rec), 60 (message.ack() on success and message.ret), 61 (Brevo adapter interface + mock implement)</sub>
+  > Worker is stateless: queue message carries full SendPayload; ack/retry only
 
 ### Sprint 14 — 2026-11-10 → 2026-11-11
 
 _Phase 6 - CF Worker → Phase 7 - Hardening · 3 tasks · 9 h_
 
 - [ ] **63** Test T13 concurrency serialized via orchestrator FOR UPDATE
-  <sub>spec §14 · T13 · high · 3 h · needs 37 (Load lead + SELECT FOR UPDATE to seriali), 62 (Claim then send then result flow)</sub>
+  <sub>spec §14 · T13 · high · 3 h · needs 37 (Load lead + SELECT FOR UPDATE to seriali), 62 (Consume queue then send via Brevo (no ca)</sub>
 - [ ] **64** Retry and backoff policy classify transient vs permanent
   <sub>spec §6 · high · 3 h · needs 60 (message.ack() on success and message.ret)</sub>
 - [ ] **65** Structured logging
@@ -309,4 +313,4 @@ Tasks that block the most downstream work:
 - **59** queue(batch env ctx) handler with per-message try/catch — unlocks 1 task(s)
 - **60** message.ack() on success and message.retry() on transient failure — unlocks 2 task(s)
 - **61** Brevo adapter interface + mock implementation — unlocks 2 task(s)
-- **62** Claim then send then result flow — unlocks 1 task(s)
+- **62** Consume queue then send via Brevo (no callbacks) — unlocks 1 task(s)

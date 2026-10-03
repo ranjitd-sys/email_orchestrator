@@ -33,7 +33,6 @@ const num = (n) => (Number(n) || 0);
 const totalH = tasks.reduce((s, t) => s + num(t.estimate_h), 0);
 const sprints = [...new Set(tasks.map((t) => t.sprint))].sort((a, b) => a - b);
 
-// ---------- summary CSV (one row per sprint) ----------
 const sumHead = ["sprint", "start_date", "end_date", "phases", "task_count", "hours", "critical_done", "task_ids", "goal"];
 const sumRows = sprints.map((s) => {
   const inS = tasks.filter((t) => t.sprint === s);
@@ -50,7 +49,6 @@ const esc = (v) => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')
 fs.writeFileSync(path.join(docs, "Email_Orchestrator_Schedule.csv"),
   [sumHead.join(","), ...sumRows.map((r) => r.map(esc).join(","))].join("\n") + "\n");
 
-// ---------- markdown ----------
 let md = `# Email Orchestrator — Build Plan
 
 **Source of truth:** \`Email_Orchestrator_Tasks.csv\` · **Schedule:** \`Email_Orchestrator_Schedule.csv\`
