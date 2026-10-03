@@ -9,7 +9,7 @@ Regenerate this file: `bun run tasks`
 | Working days | 30 |
 | Total effort | 167 h |
 | Tasks | 68 |
-| Status | 9 done · 0 in progress · 58 todo |
+| Status | 23 done · 0 in progress · 44 todo |
 
 **Legend** — `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `[-]` skipped
 
@@ -65,45 +65,59 @@ _Phase 0 - Scaffold → Phase 1 - Schema · 7 tasks · 12 h_
   <sub>Catch type errors before they compound · spec P0 · high · 1 h · needs 2 (Add deps: postgres wrangler typescript @)</sub>
 - [!] **5** Provision hosted Postgres database
   <sub>Source of truth for all 15 tables · spec P0 · **critical** · 4 h</sub>
-  > Needs your Cloudflare/Neon/Supabase account
-- [ ] **6** Migration: leads (engagement state contact identity suppression)
+  > Local Docker Postgres running (docker-compose.yml, port 5432); hosted still pending
+- [x] **6** Migration: leads (engagement state contact identity suppression)
   <sub>Holds the engagement state (spec 2) · spec §9 · T08, T09, T10 · **critical** · 2 h · needs 5 (Provision hosted Postgres database)</sub>
-- [ ] **7** Migration: datasets
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+- [x] **7** Migration: datasets
   <sub>spec §9 · T14 · high · 1 h · needs 5 (Provision hosted Postgres database)</sub>
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
 
 ### Sprint 2 — 2026-10-07 → 2026-10-08
 
 _Phase 1 - Schema · 7 tasks · 12 h_
 
-- [ ] **8** Migration: campaigns
+- [x] **8** Migration: campaigns
   <sub>spec §9 · T01, T15 · high · 1 h · needs 5 (Provision hosted Postgres database)</sub>
-- [ ] **9** Migration: sequences
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+- [x] **9** Migration: sequences
   <sub>spec §7 · high · 1 h · needs 5 (Provision hosted Postgres database)</sub>
-- [ ] **10** Migration: sequence_steps (order N_DAYS delay template conditions)
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+- [x] **10** Migration: sequence_steps (order N_DAYS delay template conditions)
   <sub>Defines N_DAYS delays per step · spec §7 · T01, T02, T15, T14 · **critical** · 2 h · needs 5 (Provision hosted Postgres database)</sub>
-- [ ] **11** Migration: templates
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+- [x] **11** Migration: templates
   <sub>spec §9 · T14 · high · 1 h · needs 5 (Provision hosted Postgres database)</sub>
-- [ ] **12** Migration: scheduled_actions (lifecycle status)
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+- [x] **12** Migration: scheduled_actions (lifecycle status)
   <sub>The schedule itself (spec 6) · spec §6 · T01, T02, T11 · **critical** · 3 h · needs 5 (Provision hosted Postgres database)</sub>
-- [ ] **13** Migration: send_attempts (immutable provider correlation)
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+- [x] **13** Migration: send_attempts (immutable provider correlation)
   <sub>One row per outbound attempt · spec §9 · T12, T14, T10 · **critical** · 2 h · needs 5 (Provision hosted Postgres database)</sub>
-- [ ] **14** Migration: email_events (immutable normalized provider events)
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+- [x] **14** Migration: email_events (immutable normalized provider events)
   <sub>Immutable provider history · spec §5 · T03, T12 · **critical** · 2 h · needs 5 (Provision hosted Postgres database)</sub>
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
 
 ### Sprint 3 — 2026-10-09 → 2026-10-12
 
 _Phase 1 - Schema · 7 tasks · 12 h_
 
-- [ ] **15** Migration: job_transitions (audit trail)
+- [x] **15** Migration: job_transitions (audit trail)
   <sub>Audit trail for every transition · spec §5 · T14 · **critical** · 2 h · needs 5 (Provision hosted Postgres database)</sub>
-- [ ] **16** Migration: suppression_list
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+- [x] **16** Migration: suppression_list
   <sub>spec §9 · T08, T09, T10 · high · 1 h · needs 5 (Provision hosted Postgres database)</sub>
-- [ ] **17** Migration: domains
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+- [x] **17** Migration: domains
   <sub>spec §9 · T14 · medium · 1 h · needs 5 (Provision hosted Postgres database)</sub>
-- [ ] **18** Migration: mailboxes
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+- [x] **18** Migration: mailboxes
   <sub>spec §9 · T14 · medium · 1 h · needs 5 (Provision hosted Postgres database)</sub>
-- [ ] **19** Migration: experiments (optional A/B)
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+- [x] **19** Migration: experiments (optional A/B)
   <sub>spec §9 · low · 2 h · needs 5 (Provision hosted Postgres database)</sub>
+  > packages/db/migrations/0001_init.sql (all 14 tables in one migration)
 - [ ] **20** Attribution FKs on scheduled_actions and send_attempts
   <sub>Answers 'which dataset sent this' · spec §10 · T14 · **critical** · 4 h · needs 6 (Migration: leads (engagement state conta), 7 (Migration: datasets), 8 (Migration: campaigns), 9 (Migration: sequences), 10 (Migration: sequence_steps (order N_DAYS ), 11 (Migration: templates), 17 (Migration: domains), 18 (Migration: mailboxes)</sub>
 - [ ] **21** Constraint UNIQUE(provider_event_id)

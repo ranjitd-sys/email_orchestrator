@@ -14,6 +14,11 @@
     "check": "bun run typecheck && bun run --cwd apps/worker typecheck && bun run test",
     "dev:orchestrator": "bun run --cwd apps/orchestrator src/index.ts",
     "deploy:orchestrator": "bun run --cwd apps/orchestrator deploy",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d",
+    "db:migrate": "bun run packages/db/src/migrate.ts",
+    "db:psql": "docker exec -it email-pg psql -U email -d email_orchestrator",
     "worker:plan": "bun run --cwd apps/worker plan",
     "worker:deploy": "bun run --cwd apps/worker deploy",
     "worker:dev": "bun run --cwd apps/worker dev"

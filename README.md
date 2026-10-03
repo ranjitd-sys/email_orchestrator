@@ -25,6 +25,20 @@ cp .env.example .env    # then fill in values
 bun run check           # typecheck both apps + run tests
 ```
 
+## Local database
+
+A `docker-compose.yml` runs `postgres:16-alpine` on `localhost:5432` with
+database `email_orchestrator`, user/password `email`. Migrations are plain SQL
+in `packages/db/migrations`, applied by a small Bun runner.
+
+```bash
+bun run db:up          # start the container (first run pulls the image)
+bun run db:migrate     # apply pending migrations (idempotent)
+bun run db:psql        # shell into psql
+bun run db:reset       # wipe the volume and start fresh
+bun run db:down        # stop the container
+```
+
 ## Commands
 
 | Command | Purpose |

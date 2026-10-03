@@ -7,7 +7,7 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun --watch src/index.ts",
-    "migrate": "bun run src/db/migrate.ts",
+    "migrate": "bun run ../packages/db/src/migrate.ts",
     "typecheck": "tsc --noEmit",
     "deploy": "echo 'orchestrator deploys to your Bun host (systemd/PM2/Docker)' && exit 1"
   },

@@ -3,21 +3,21 @@ id,sprint,sprint_days,phase,task,why,spec_ref,acceptance_tests,priority,estimate
 2,1,2026-10-05..2026-10-06,Phase 0 - Scaffold,Add deps: postgres wrangler typescript @types/bun,Orchestrator needs a Postgres driver,P0,,critical,1,done,,1,"Plus alchemy@2.0.0-beta.80, effect@4.0.0, @effect/platform-node (worker only)"
 3,1,2026-10-05..2026-10-06,Phase 0 - Scaffold,Create .env.example (DATABASE_URL CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_QUEUE_ID CLOUDFLARE_API_TOKEN BREVO_API_KEY INTERNAL_API_SECRET),Secrets must never be committed,P0,,critical,1,done,,2,
 4,1,2026-10-05..2026-10-06,Phase 0 - Scaffold,Add bun test and typecheck scripts,Catch type errors before they compound,P0,,high,1,done,,2,
-5,1,2026-10-05..2026-10-06,Phase 0 - Scaffold,Provision hosted Postgres database,Source of truth for all 15 tables,P0,,critical,4,blocked,,,Needs your Cloudflare/Neon/Supabase account
-6,1,2026-10-05..2026-10-06,Phase 1 - Schema,Migration: leads (engagement state contact identity suppression),Holds the engagement state (spec 2),S9,T08;T09;T10,critical,2,todo,,5,
-7,1,2026-10-05..2026-10-06,Phase 1 - Schema,Migration: datasets,,S9,T14,high,1,todo,,5,
-8,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: campaigns,,S9,T01;T15,high,1,todo,,5,
-9,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: sequences,,S7,,high,1,todo,,5,
-10,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: sequence_steps (order N_DAYS delay template conditions),Defines N_DAYS delays per step,S7,T01;T02;T15;T14,critical,2,todo,,5,
-11,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: templates,,S9,T14,high,1,todo,,5,
-12,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: scheduled_actions (lifecycle status),The schedule itself (spec 6),S6,T01;T02;T11,critical,3,todo,,5,
-13,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: send_attempts (immutable provider correlation),One row per outbound attempt,S9,T12;T14;T10,critical,2,todo,,5,
-14,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: email_events (immutable normalized provider events),Immutable provider history,S5,T03;T12,critical,2,todo,,5,
-15,3,2026-10-09..2026-10-12,Phase 1 - Schema,Migration: job_transitions (audit trail),Audit trail for every transition,S5,T14,critical,2,todo,,5,
-16,3,2026-10-09..2026-10-12,Phase 1 - Schema,Migration: suppression_list,,S9,T08;T09;T10,high,1,todo,,5,
-17,3,2026-10-09..2026-10-12,Phase 1 - Schema,Migration: domains,,S9,T14,medium,1,todo,,5,
-18,3,2026-10-09..2026-10-12,Phase 1 - Schema,Migration: mailboxes,,S9,T14,medium,1,todo,,5,
-19,3,2026-10-09..2026-10-12,Phase 1 - Schema,Migration: experiments (optional A/B),,S9,,low,2,todo,,5,
+5,1,2026-10-05..2026-10-06,Phase 0 - Scaffold,Provision hosted Postgres database,Source of truth for all 15 tables,P0,,critical,4,blocked,,,"Local Docker Postgres running (docker-compose.yml, port 5432); hosted still pending"
+6,1,2026-10-05..2026-10-06,Phase 1 - Schema,Migration: leads (engagement state contact identity suppression),Holds the engagement state (spec 2),S9,T08;T09;T10,critical,2,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+7,1,2026-10-05..2026-10-06,Phase 1 - Schema,Migration: datasets,,S9,T14,high,1,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+8,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: campaigns,,S9,T01;T15,high,1,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+9,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: sequences,,S7,,high,1,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+10,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: sequence_steps (order N_DAYS delay template conditions),Defines N_DAYS delays per step,S7,T01;T02;T15;T14,critical,2,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+11,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: templates,,S9,T14,high,1,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+12,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: scheduled_actions (lifecycle status),The schedule itself (spec 6),S6,T01;T02;T11,critical,3,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+13,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: send_attempts (immutable provider correlation),One row per outbound attempt,S9,T12;T14;T10,critical,2,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+14,2,2026-10-07..2026-10-08,Phase 1 - Schema,Migration: email_events (immutable normalized provider events),Immutable provider history,S5,T03;T12,critical,2,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+15,3,2026-10-09..2026-10-12,Phase 1 - Schema,Migration: job_transitions (audit trail),Audit trail for every transition,S5,T14,critical,2,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+16,3,2026-10-09..2026-10-12,Phase 1 - Schema,Migration: suppression_list,,S9,T08;T09;T10,high,1,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+17,3,2026-10-09..2026-10-12,Phase 1 - Schema,Migration: domains,,S9,T14,medium,1,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+18,3,2026-10-09..2026-10-12,Phase 1 - Schema,Migration: mailboxes,,S9,T14,medium,1,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
+19,3,2026-10-09..2026-10-12,Phase 1 - Schema,Migration: experiments (optional A/B),,S9,,low,2,done,,5,packages/db/migrations/0001_init.sql (all 14 tables in one migration)
 20,3,2026-10-09..2026-10-12,Phase 1 - Schema,Attribution FKs on scheduled_actions and send_attempts,Answers 'which dataset sent this',S10,T14,critical,4,todo,,6;7;8;9;10;11;17;18,
 21,3,2026-10-09..2026-10-12,Phase 1 - Schema,Constraint UNIQUE(provider_event_id),Blocks duplicate OPENED/CLICKED,S12,T03;T12,critical,1,todo,,14,
 22,4,2026-10-13..2026-10-14,Phase 1 - Schema,Constraint UNIQUE(send_attempt_id),,S12,T12,critical,1,todo,,13;14,
