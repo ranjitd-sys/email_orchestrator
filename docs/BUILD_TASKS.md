@@ -5,11 +5,11 @@ Regenerate this file: `bun run tasks`
 
 | | |
 |---|---|
-| Sprints | 15 × 2 days |
-| Working days | 30 |
-| Total effort | 190 h |
-| Tasks | 76 |
-| Status | 34 done · 0 in progress · 28 todo |
+| Sprints | 16 × 2 days |
+| Working days | 32 |
+| Total effort | 214 h |
+| Tasks | 83 |
+| Status | 47 done · 0 in progress · 22 todo |
 
 **Legend** — `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `[-]` skipped
 
@@ -45,6 +45,7 @@ Regenerate this file: `bun run tasks`
 | 13 | 2026-11-06 → 2026-11-09 | CF Worker | 4 | 12 h |
 | 14 | 2026-11-10 → 2026-11-11 | CF Worker + Hardening | 3 | 9 h |
 | 15 | 2026-11-12 → 2026-11-13 | Hardening | 3 | 11 h |
+| 16 | 2026-11-06 → 2026-11-09 | Domain engine + Scheduler + sequences | 7 | 24 h |
 
 ---
 
@@ -133,18 +134,18 @@ _Phase 1 - Schema → Phase 2 - Domain engine → Phase 3 - Event processor → 
 - [-] **22** Constraint UNIQUE(send_attempt_id)
   <sub>spec §12 · T12 · **critical** · 1 h · needs 13 (Migration: send_attempts (immutable prov), 14 (Migration: email_events (immutable norma)</sub>
   > Kept non-unique on purpose: one attempt legitimately emits many opens/clicks. Per-attempt dedupe comes from UNIQUE(provider_event_id) + event precedence. Revisit only if spec S12 changes.
-- [ ] **23** Idempotency key against duplicate first-step creation
+- [x] **23** Idempotency key against duplicate first-step creation
   <sub>Guarantees only one O_1 / C_1 · spec §12 · T03, T04, T05 · **critical** · 3 h · needs 12 (Migration: scheduled_actions (lifecycle ), 20 (Attribution FKs on scheduled_actions and), 21 (Constraint UNIQUE(provider_event_id))</sub>
-  > Partially done: the Resend adapter sends Idempotency-Key = sendAttemptId. Still missing: DB-level guard so a replayed first-step event cannot create a duplicate O_1/C_1 action.
+  > DB-level guard added: createNextAction/createFirstStep insert with ON CONFLICT DO NOTHING against the partial unique index (lead_id, sequence_id, step_id) WHERE active; a replayed insert cannot create a duplicate first/next step.
 - [x] **24** Enums: EngagementState (NEW NOT_OPENED OPENED CLICKED REPLIED SUPPRESSED)
   <sub>spec §2 · high · 1 h · needs 6 (Migration: leads (engagement state conta)</sub>
   > ENGAGEMENT_STATES in packages/shared/src/index.ts
-- [x] **25** Enums: event types (SEND OPENED UNIQUE_OPENED CLICKED REPLIED HARD_BOUNCE SPAM UNSUBSCRIBED INVALID_EMAIL DELIVERED SENT)
+- [x] **25** Enums: event types (SEND OPENED UNIQUE_OPENED CLICKED REPLIED eHARD_BOUNCE SPAM UNSUBSCRIBED INVALID_EMAIL DELIVERED SENT)
   <sub>spec §3 · high · 1 h · needs 6 (Migration: leads (engagement state conta)</sub>
   > DOMAIN_EVENTS + SUPPRESSION_EVENTS + PROMOTING_EVENTS in packages/shared/src/index.ts
 - [x] **26** Enums: sequence types (NOT_OPENED OPENED CLICKED REPLIED SUPPRESSED)
   <sub>spec §7 · high · 1 h · needs 9 (Migration: sequences)</sub>
-  > Decision: only NOT_OPENED/OPENED/CLICKED are sequences. REPLIED and SUPPRESSED are terminal states with no sequence rows. See SEQUENCE_TYPES.
+  > Decision: NOT_OPENED/OPENED/CLICKED are outbound sequences; REPLIED now also tracks steps (R_1..R_3) in the machine (no-outbound default)
 - [x] **27** Enums: scheduled action status (SCHEDULED QUEUED PROCESSING SENT RETRY_SCHEDULED CANCELLED FAILED COMPLETED)
   <sub>spec §6 · high · 1 h · needs 12 (Migration: scheduled_actions (lifecycle )</sub>
   > ACTION_STATUSES in packages/shared/src/index.ts
@@ -153,10 +154,10 @@ _Phase 1 - Schema → Phase 2 - Domain engine → Phase 3 - Event processor → 
   > Superseded by 69: transitions now live in an XState v5 machine, not a hand-rolled switch.
 - [x] **69** XState v5 machine for lead engagement states (NEW/NOT_OPENED/OPENED/CLICKED/REPLIED/SUPPRESSED)
   <sub>Single declarative source of truth for section 3 transitions and emitted actions · spec §3 · **critical** · 3 h · needs 24 (Enums: EngagementState (NEW NOT_OPENED O), 25 (Enums: event types (SEND OPENED UNIQUE_O)</sub>
-  > apps/orchestrator/src/domain/transition.ts uses setup/createMachine; transition() drives it with createActor + machine.resolveState
+  > apps/orchestrator/src/domain/transition.ts uses setup/createMachine; now hierarchical with sequence steps (NO_/O_/C_/R_ 1-3 + COMPLETE) and NEXT_STEP; transition() returns {engagement, step, actions} driven via createActor + machine.resolveState
 - [x] **70** Transition-table, precedence and branch-switch tests over the XState machine
   <sub>Proves no downgrade, no sequence restart, suppression from every state · spec §3, §4, §8 · T03, T04, T05, T06 · **critical** · 2 h · needs 69 (XState v5 machine for lead engagement st)</sub>
-  > 26 orchestrator tests; root suite is 39 pass
+  > 33 orchestrator tests; root suite is 56 pass (with DB)
 - [x] **71** Effect SQL migrator (Migrator.fromRecord + @effect/sql-pg) replacing the plain SQL runner
   <sub>One Effect-native migration path instead of a bespoke runner · spec §10 · high · 3 h · needs 14 (Migration: email_events (immutable norma)</sub>
   > 0001_init.ts default Effect migration; tracks in effect_sql_migrations; rerun is a no-op; postgres driver removed from root
@@ -166,9 +167,9 @@ _Phase 1 - Schema → Phase 2 - Domain engine → Phase 3 - Event processor → 
 - [x] **75** Fix per-package tsconfig extends and wire orchestrator typecheck into root check
   <sub>A self-referencing tsconfig made the orchestrator project unloadable and its typecheck never ran · spec P0 · high · 1 h</sub>
   > apps/orchestrator/tsconfig.json extended itself; root check now runs all three tsc passes
-- [ ] **76** Wire SendPayload tags into the Cloudflare Queues publisher envelope
+- [x] **76** Wire SendPayload tags into the Cloudflare Queues publisher envelope
   <sub>Webhooks correlate back to a send attempt only if the tags survive the queue round trip · spec §11 · high · 2 h · needs 51 (Cloudflare Queues HTTP publisher POST ac)</sub>
-  > Decision: no callbacks, tags are the only correlation channel; verify Resend echoes them on webhook events
+  > Decision: no callbacks, tags are the only correlation channel. buildSendPayload writes tags {actionId,sendAttemptId,leadId,datasetId,campaignId,sequenceId,stepId} into the SendPayload the publisher pushes. Resend webhook echo verification still pending under 73.
 
 ### Sprint 5 — 2026-10-15 → 2026-10-16
 
@@ -240,12 +241,15 @@ _Phase 3 - Event processor · 2 tasks · 11 h_
 
 _Phase 4 - Scheduler + sequences · 3 tasks · 10 h_
 
-- [ ] **46** Due-sweep over scheduled_actions where SCHEDULED and execute_at passed
+- [x] **46** Due-sweep over scheduled_actions where SCHEDULED and execute_at passed
   <sub>Decides WHEN to send (spec 8) · spec §8 · T01 · **critical** · 4 h · needs 12 (Migration: scheduled_actions (lifecycle )</sub>
-- [ ] **47** NO_1 to NO_2 to NO_3 sequential logic (only advance while NOT_OPENED)
+  > packages/db/src/queries.ts loadDueActions: status='SCHEDULED' AND execute_at<=now with FOR UPDATE OF sa SKIP LOCKED; scheduler/tick.ts runTick runs it per cron invocation.
+- [x] **47** NO_1 to NO_2 to NO_3 sequential logic (only advance while NOT_OPENED)
   <sub>Sequential, NOT sent upfront · spec §8 · T01, T15 · **critical** · 4 h · needs 10 (Migration: sequence_steps (order N_DAYS ), 46 (Due-sweep over scheduled_actions where S)</sub>
-- [ ] **48** Per-step configurable N_DAYS
+  > Machine NEXT_STEP advances NO_1->NO_2->NO_3->COMPLETE; tick inserts the next step at execute_at = now + delay_days and only while the lead is still in that state (integration test proves NO_1->NO_2 at +2d).
+- [x] **48** Per-step configurable N_DAYS
   <sub>N_DAYS varies per step · spec §8 · T01, T02, T15, T10 · **critical** · 2 h · needs 10 (Migration: sequence_steps (order N_DAYS ), 46 (Due-sweep over scheduled_actions where S)</sub>
+  > sequence_steps.delay_days is used by createNextAction (execute_at = now + delay_days days); seed data has per-step delays (e.g. NO_2 = 2).
 
 ### Sprint 10 — 2026-10-29 → 2026-10-30
 
@@ -262,8 +266,9 @@ _Phase 4 - Scheduler + sequences · 3 tasks · 11 h_
 
 _Phase 5 - Queue producer + internal API · 3 tasks · 11 h_
 
-- [ ] **51** Cloudflare Queues HTTP publisher POST accounts/queues/messages
+- [x] **51** Cloudflare Queues HTTP publisher POST accounts/queues/messages
   <sub>Bridge from Bun to the CF Queue · spec §11 · **critical** · 4 h · needs 2 (Add deps: alchemy typescript @types/bun ), 3 (Create .env.example (DATABASE_URL CLOUDF)</sub>
+  > apps/orchestrator/src/queue/publisher.ts cloudflareQueue() POSTs to /accounts/{id}/queues/{id}/messages/push; local in-memory queue used until Cloudflare creds exist.
 - [-] **53** Push actionId only when action is due
   <sub>spec §11 · **critical** · 2 h · needs 46 (Due-sweep over scheduled_actions where S), 52 (Tests T01 T02 T15)</sub>
   > Superseded: worker is callback-free and queue carries full SendPayload, not actionId. Producer will publish full payload when action is due.
@@ -328,6 +333,32 @@ _Phase 7 - Hardening · 3 tasks · 11 h_
 - [ ] **68** Concurrency stress tests duplicate and parallel webhooks
   <sub>spec §12 · T03, T12, T13 · high · 4 h · needs 45 (Tests T03 T04 T05 T06 T07 T08 T09 T10 T1), 63 (Test T13 concurrency serialized via orch)</sub>
 
+### Sprint 16 — 2026-11-06 → 2026-11-09
+
+_Phase 2 - Domain engine → Phase 4 - Scheduler + sequences · 7 tasks · 24 h_
+
+- [x] **77** Hierarchical state machine: sequence steps (NO_/O_/C_/R_ 1-3 + COMPLETE) as child states
+  <sub>Steps are visible inside the machine; NEXT_STEP advances within a sequence · spec §3, §7 · T01, T15 · **critical** · 4 h · needs 69 (XState v5 machine for lead engagement st)</sub>
+  > transition.ts now nests steps under NOT_OPENED/OPENED/CLICKED/REPLIED with an initial step per parent
+- [x] **78** transition() composite {engagement, step, actions} + CREATE_STEP/COMPLETE_SEQUENCE actions
+  <sub>Scheduler and M3 both consume one machine · spec §3 · T01, T15 · **critical** · 3 h · needs 77 (Hierarchical state machine: sequence ste)</sub>
+  > NEXT_STEP emits CREATE_STEP(next) or COMPLETE_SEQUENCE(type); record-only preserves the current step
+- [x] **79** Scheduler DB queries (loadDueActions createNextAction markActionQueued insertSendAttempt)
+  <sub>Cron tick reads and writes the schedule · spec §8 · T01 · **critical** · 4 h · needs 12 (Migration: scheduled_actions (lifecycle )</sub>
+  > packages/db/src/queries.ts; createNextAction sets execute_at = now + delay_days
+- [x] **80** Scheduler tick + SendPayload builder + local/Cloudflare queue publisher
+  <sub>One cron invocation pulls due actions and enqueues sends · spec §8, §11 · T01 · **critical** · 4 h · needs 79 (Scheduler DB queries (loadDueActions cre)</sub>
+  > scheduler/tick.ts + payload.ts + queue/publisher.ts; per-action work runs in one SqlClient.withTransaction
+- [x] **81** One-shot cron entrypoint (run.ts + scheduler:tick script)
+  <sub>Device cron runs one tick then exits · spec §8 · high · 2 h · needs 80 (Scheduler tick + SendPayload builder + l)</sub>
+  > root script scheduler:tick = bun run apps/orchestrator/src/scheduler/run.ts; no in-process setInterval loop
+- [x] **82** Seed script (templates sequences sequence_steps with delay_days)
+  <sub>Provides NO_/O_/C_ steps for the scheduler to run · spec §7, §9 · T01, T15 · high · 3 h · needs 71 (Effect SQL migrator (Migrator.fromRecord)</sub>
+  > packages/db/src/seed.ts + db:seed; demo campaign, sequences, per-step templates and delays (NO_2 = 2 days)
+- [x] **83** Scheduler integration tests (NO_1->NO_2 at +2d, expiry, OPENED interrupt)
+  <sub>Proves cron advancement against real Postgres · spec §8, §12 · T01, T02, T03, T15 · **critical** · 4 h · needs 80 (Scheduler tick + SendPayload builder + l)</sub>
+  > scheduler.integration.test.ts (RUN_DB_TESTS=1): NO_1 sent, NO_2 at now+2d; due->sent + NO_3; interrupt cancels
+
 ---
 
 ## Critical path
@@ -340,7 +371,7 @@ Tasks that block the most downstream work:
 - **5** Provision hosted Postgres database — unlocks 14 task(s)
 - **6** Migration: leads (engagement state contact identity suppression) — unlocks 4 task(s)
 - **10** Migration: sequence_steps (order N_DAYS delay template conditions) — unlocks 3 task(s)
-- **12** Migration: scheduled_actions (lifecycle status) — unlocks 4 task(s)
+- **12** Migration: scheduled_actions (lifecycle status) — unlocks 5 task(s)
 - **13** Migration: send_attempts (immutable provider correlation) — unlocks 3 task(s)
 - **14** Migration: email_events (immutable normalized provider events) — unlocks 4 task(s)
 - **15** Migration: job_transitions (audit trail) — unlocks 1 task(s)
@@ -374,6 +405,9 @@ Tasks that block the most downstream work:
 - **60** message.ack() on success and message.retry() on transient failure — unlocks 2 task(s)
 - **61** Pluggable email providers (EmailSender interface + factory) — unlocks 2 task(s)
 - **62** Consume queue then send via Brevo (no callbacks) — unlocks 1 task(s)
-- **69** XState v5 machine for lead engagement states (NEW/NOT_OPENED/OPENED/CLICKED/REPLIED/SUPPRESSED) — unlocks 4 task(s)
+- **69** XState v5 machine for lead engagement states (NEW/NOT_OPENED/OPENED/CLICKED/REPLIED/SUPPRESSED) — unlocks 5 task(s)
 - **70** Transition-table, precedence and branch-switch tests over the XState machine — unlocks 1 task(s)
 - **73** Resend webhook normalization to DomainEvent using SendPayload.tags correlation — unlocks 2 task(s)
+- **77** Hierarchical state machine: sequence steps (NO_/O_/C_/R_ 1-3 + COMPLETE) as child states — unlocks 1 task(s)
+- **79** Scheduler DB queries (loadDueActions createNextAction markActionQueued insertSendAttempt) — unlocks 1 task(s)
+- **80** Scheduler tick + SendPayload builder + local/Cloudflare queue publisher — unlocks 2 task(s)
