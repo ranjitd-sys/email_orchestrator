@@ -8,8 +8,25 @@ export const ENGAGEMENT_STATES = [
 ] as const;
 export type EngagementState = (typeof ENGAGEMENT_STATES)[number];
 
-export const SEQUENCE_TYPES = ["NOT_OPENED", "OPENED", "CLICKED"] as const;
+export const SEQUENCE_TYPES = ["NOT_OPENED", "OPENED", "CLICKED", "REPLIED"] as const;
 export type SequenceType = (typeof SEQUENCE_TYPES)[number];
+
+export const STEP_CODES = [
+  "NO_1",
+  "NO_2",
+  "NO_3",
+  "O_1",
+  "O_2",
+  "O_3",
+  "C_1",
+  "C_2",
+  "C_3",
+  "R_1",
+  "R_2",
+  "R_3",
+  "COMPLETE",
+] as const;
+export type StepCode = (typeof STEP_CODES)[number];
 
 export const ACTION_STATUSES = [
   "SCHEDULED",

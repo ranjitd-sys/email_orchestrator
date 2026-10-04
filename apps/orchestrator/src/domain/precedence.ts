@@ -1,6 +1,11 @@
 import type { DomainEvent, EngagementState } from "@email/shared";
 import { isSuppressionEvent } from "@email/shared";
-import { transition, type TransitionAction, type TransitionResult } from "./transition";
+import {
+  transition,
+  type TransitionAction,
+  type TransitionPosition,
+  type TransitionResult,
+} from "./transition";
 
 export function rankEvent(event: DomainEvent): number {
   if (isSuppressionEvent(event)) return 0;
@@ -22,16 +27,17 @@ export function rankEvent(event: DomainEvent): number {
 }
 
 export function applyInPrecedence(
-  initial: EngagementState,
+  initial: TransitionPosition | EngagementState,
   events: readonly DomainEvent[],
 ): TransitionResult {
   const ordered = [...events].sort((a, b) => rankEvent(a) - rankEvent(b));
-  let state = initial;
+  let position: TransitionPosition =
+    typeof initial === "string" ? { engagement: initial, step: null } : initial;
   const actions: TransitionAction[] = [];
   for (const event of ordered) {
-    const result = transition(state, event);
-    state = result.state;
+    const result = transition(position, event);
+    position = { engagement: result.engagement, step: result.step };
     actions.push(...result.actions);
   }
-  return { state, actions };
+  return { engagement: position.engagement, step: position.step, actions };
 }

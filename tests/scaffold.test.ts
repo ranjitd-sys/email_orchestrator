@@ -27,8 +27,8 @@ describe("shared contracts", () => {
     ]);
   });
 
-  test("sequence types are the outbound ones only", () => {
-    expect(SEQUENCE_TYPES).toEqual(["NOT_OPENED", "OPENED", "CLICKED"]);
+  test("sequence types include REPLIED steps tracked by the machine", () => {
+    expect(SEQUENCE_TYPES).toEqual(["NOT_OPENED", "OPENED", "CLICKED", "REPLIED"]);
   });
 
   test("action statuses match spec section 6 lifecycle", () => {
