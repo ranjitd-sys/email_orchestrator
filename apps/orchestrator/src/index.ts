@@ -4,9 +4,12 @@ import * as Layer from "effect/Layer";
 import * as Scope from "effect/Scope";
 import { dbLayer } from "@email/db";
 import { SqlClient } from "effect/sql/SqlClient";
+import { startScheduler } from "./scheduler/index.ts";
+import { createPublisher } from "./queue/publisher.ts";
 
 const PORT = Number(process.env.PORT ?? 3000);
 const databaseUrl = process.env.DATABASE_URL;
+const schedulerIntervalMs = Number(process.env.SCHEDULER_INTERVAL_MS ?? 60_000);
 
 async function main() {
   let sql: SqlClient | null = null;
@@ -16,6 +19,9 @@ async function main() {
       Layer.build(dbLayer(databaseUrl)).pipe(Effect.provideService(Scope.Scope, scope)),
     );
     sql = Context.get(context, SqlClient);
+
+    const { publisher } = createPublisher(process.env);
+    startScheduler(publisher, databaseUrl, schedulerIntervalMs);
   }
 
   const server = Bun.serve({

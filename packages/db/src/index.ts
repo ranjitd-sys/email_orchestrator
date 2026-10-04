@@ -6,3 +6,5 @@ export function dbLayer(url: string) {
 }
 
 export { runMigrations } from "./migrate.ts";
+export * from "./queries.ts";
+export * from "./seed.ts";
