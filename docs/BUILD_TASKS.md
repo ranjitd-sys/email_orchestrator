@@ -7,9 +7,9 @@ Regenerate this file: `bun run tasks`
 |---|---|
 | Sprints | 16 × 2 days |
 | Working days | 32 |
-| Total effort | 214 h |
-| Tasks | 83 |
-| Status | 47 done · 0 in progress · 22 todo |
+| Total effort | 235 h |
+| Tasks | 90 |
+| Status | 54 done · 2 in progress · 20 todo |
 
 **Legend** — `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `[-]` skipped
 
@@ -45,7 +45,7 @@ Regenerate this file: `bun run tasks`
 | 13 | 2026-11-06 → 2026-11-09 | CF Worker | 4 | 12 h |
 | 14 | 2026-11-10 → 2026-11-11 | CF Worker + Hardening | 3 | 9 h |
 | 15 | 2026-11-12 → 2026-11-13 | Hardening | 3 | 11 h |
-| 16 | 2026-11-06 → 2026-11-09 | Domain engine + Scheduler + sequences | 7 | 24 h |
+| 16 | 2026-11-06 → 2026-11-09 | Domain engine + Scheduler + sequences + Scaffold | 14 | 45 h |
 
 ---
 
@@ -243,24 +243,27 @@ _Phase 4 - Scheduler + sequences · 3 tasks · 10 h_
 
 - [x] **46** Due-sweep over scheduled_actions where SCHEDULED and execute_at passed
   <sub>Decides WHEN to send (spec 8) · spec §8 · T01 · **critical** · 4 h · needs 12 (Migration: scheduled_actions (lifecycle )</sub>
-  > packages/db/src/queries.ts loadDueActions: status='SCHEDULED' AND execute_at<=now with FOR UPDATE OF sa SKIP LOCKED; scheduler/tick.ts runTick runs it per cron invocation.
+  > packages/db/src/queries.ts loadDueActions/loadDueActionIds/loadDueActionById: action_status='SCHEDULED' AND execute_at<=now, loadDueActionById uses FOR UPDATE OF sa SKIP LOCKED; domain/tick.ts runTick runs it per cron invocation.
 - [x] **47** NO_1 to NO_2 to NO_3 sequential logic (only advance while NOT_OPENED)
   <sub>Sequential, NOT sent upfront · spec §8 · T01, T15 · **critical** · 4 h · needs 10 (Migration: sequence_steps (order N_DAYS ), 46 (Due-sweep over scheduled_actions where S)</sub>
-  > Machine NEXT_STEP advances NO_1->NO_2->NO_3->COMPLETE; tick inserts the next step at execute_at = now + delay_days and only while the lead is still in that state (integration test proves NO_1->NO_2 at +2d).
+  > Machine NEXT_STEP advances NO_1->NO_2->NO_3->COMPLETE; the DECIDED actor calls persistNextStep which inserts the next step at execute_at = now + delay_days and only while the lead is still in that state (flow.integration.test.ts proves NO_1->NO_2 at +2d).
 - [x] **48** Per-step configurable N_DAYS
   <sub>N_DAYS varies per step · spec §8 · T01, T02, T15, T10 · **critical** · 2 h · needs 10 (Migration: sequence_steps (order N_DAYS ), 46 (Due-sweep over scheduled_actions where S)</sub>
-  > sequence_steps.delay_days is used by createNextAction (execute_at = now + delay_days days); seed data has per-step delays (e.g. NO_2 = 2).
+  > sequence_steps.delay_days is used by persistNextStep -> createNextAction (execute_at = now + delay_days days); seed data has per-step delays (NO_1=0, NO_2=2, NO_3=3).
 
 ### Sprint 10 — 2026-10-29 → 2026-10-30
 
 _Phase 4 - Scheduler + sequences · 3 tasks · 11 h_
 
-- [ ] **49** Interruption on OPENED CLICKED REPLIED SUPPRESSED cancels remaining steps
+- [~] **49** Interruption on OPENED CLICKED REPLIED SUPPRESSED cancels remaining steps
   <sub>spec §8 · T02, T15 · **critical** · 3 h · needs 41 (Cancel all future scheduled actions of o), 47 (NO_1 to NO_2 to NO_3 sequential logic (o)</sub>
+  > Scheduler side is done: domain/pipeline.ts pullStage cancels the action when sequence_type != leads.engagement_state and the flow routes PULLED(stale) -> cancelled; machine test covers it. Still todo: the OPENED/CLICKED/REPLIED/SUPPRESSED event that must trigger the cancel arrives via the M3 webhook (see 41).
 - [ ] **50** Sequence COMPLETE or DISCARD after NO_3 unopened per campaign config
   <sub>spec §8 · T15 · high · 2 h · needs 47 (NO_1 to NO_2 to NO_3 sequential logic (o)</sub>
-- [ ] **52** Tests T01 T02 T15
+  > transition() already emits COMPLETE_SEQUENCE on NO_3->COMPLETE (verified in tests), but nothing persists it yet: no query marks the sequence or the lead completed and no campaign DISCARD config is read. blocked_by 47 done, needs a campaign-level completion rule.
+- [~] **52** Tests T01 T02 T15
   <sub>spec §14 · **critical** · 6 h · needs 46 (Due-sweep over scheduled_actions where S), 47 (NO_1 to NO_2 to NO_3 sequential logic (o), 48 (Per-step configurable N_DAYS), 49 (Interruption on OPENED CLICKED REPLIED S), 50 (Sequence COMPLETE or DISCARD after NO_3 )</sub>
+  > flow.integration.test.ts (RUN_DB_TESTS=1) covers T01 (NO_1 queued, NO_2 at +2d), T02/T03 (NO_2 due -> NO_3 scheduled) and T15 (OPENED interrupt leaves nothing to send). Missing: an assertion that pullStage itself cancels a stale action, and COMPLETE_SEQUENCE persistence (see 49, 50).
 
 ### Sprint 11 — 2026-11-02 → 2026-11-03
 
@@ -335,7 +338,7 @@ _Phase 7 - Hardening · 3 tasks · 11 h_
 
 ### Sprint 16 — 2026-11-06 → 2026-11-09
 
-_Phase 2 - Domain engine → Phase 4 - Scheduler + sequences · 7 tasks · 24 h_
+_Phase 2 - Domain engine → Phase 4 - Scheduler + sequences → Phase 0 - Scaffold · 14 tasks · 45 h_
 
 - [x] **77** Hierarchical state machine: sequence steps (NO_/O_/C_/R_ 1-3 + COMPLETE) as child states
   <sub>Steps are visible inside the machine; NEXT_STEP advances within a sequence · spec §3, §7 · T01, T15 · **critical** · 4 h · needs 69 (XState v5 machine for lead engagement st)</sub>
@@ -348,16 +351,37 @@ _Phase 2 - Domain engine → Phase 4 - Scheduler + sequences · 7 tasks · 24 h_
   > packages/db/src/queries.ts; createNextAction sets execute_at = now + delay_days
 - [x] **80** Scheduler tick + SendPayload builder + local/Cloudflare queue publisher
   <sub>One cron invocation pulls due actions and enqueues sends · spec §8, §11 · T01 · **critical** · 4 h · needs 79 (Scheduler DB queries (loadDueActions cre)</sub>
-  > scheduler/tick.ts + payload.ts + queue/publisher.ts; per-action work runs in one SqlClient.withTransaction
+  > domain/tick.ts + domain/payload.ts + domain/orchestrator-machine.ts + domain/actors.ts + queue/publisher.ts; per-action work runs in one SqlClient.withTransaction.
 - [x] **81** One-shot cron entrypoint (run.ts + scheduler:tick script)
   <sub>Device cron runs one tick then exits · spec §8 · high · 2 h · needs 80 (Scheduler tick + SendPayload builder + l)</sub>
-  > root script scheduler:tick = bun run apps/orchestrator/src/scheduler/run.ts; no in-process setInterval loop
+  > root script scheduler:tick = bun run apps/orchestrator/src/domain/run.ts; no in-process setInterval loop. Orchestrator (src/index.ts) stays always-on for /health and never runs the flow; device cron runs the tick once a day.
 - [x] **82** Seed script (templates sequences sequence_steps with delay_days)
   <sub>Provides NO_/O_/C_ steps for the scheduler to run · spec §7, §9 · T01, T15 · high · 3 h · needs 71 (Effect SQL migrator (Migrator.fromRecord)</sub>
   > packages/db/src/seed.ts + db:seed; demo campaign, sequences, per-step templates and delays (NO_2 = 2 days)
 - [x] **83** Scheduler integration tests (NO_1->NO_2 at +2d, expiry, OPENED interrupt)
   <sub>Proves cron advancement against real Postgres · spec §8, §12 · T01, T02, T03, T15 · **critical** · 4 h · needs 80 (Scheduler tick + SendPayload builder + l)</sub>
-  > scheduler.integration.test.ts (RUN_DB_TESTS=1): NO_1 sent, NO_2 at now+2d; due->sent + NO_3; interrupt cancels
+  > apps/orchestrator/tests/flow.integration.test.ts (RUN_DB_TESTS=1): NO_1 sent, NO_2 at now+2d; due->sent + NO_3; interrupt cancels. Renamed from scheduler.integration.test.ts during the domain consolidation.
+- [x] **84** Move the scheduler flow into apps/orchestrator/src/domain and delete scheduler/
+  <sub>The whole flow belongs next to the transition machine it consumes · spec §8 · T01 · **critical** · 3 h · needs 80 (Scheduler tick + SendPayload builder + l)</sub>
+  > payload.ts, tick.ts, run.ts and pipeline.ts moved into src/domain; scheduler/ removed; scheduler-machine.ts, stages.ts and the old handler registry deleted; root script scheduler:tick now points at domain/run.ts.
+- [x] **85** Single flow machine PULLED -> DECIDED -> SENT
+  <sub>Every due action runs one flow instead of a five-state pipeline · spec §8 · T01, T15 · **critical** · 4 h · needs 79 (Scheduler DB queries (loadDueActions cre)</sub>
+  > domain/orchestrator-machine.ts: PULLED loads the due action (FOR UPDATE SKIP LOCKED) and routes null -> done/skipped or stale -> cancelled; SENT runs publisher.push then insertSendAttempt then markActionQueued.
+- [x] **86** DECIDED compound state mirrors transition.ts states and steps with per-step routing
+  <sub>Each state and step must reach its own actor · spec §3, T01 · T01, T15 · **critical** · 4 h · needs 77 (Hierarchical state machine: sequence ste)</sub>
+  > decided.routing always-guards engagement (NOT_OPENED/OPENED/CLICKED/REPLIED/NEW/SUPPRESSED) then step; sequenceStates() builds the substates from the STEP_SEQUENCE map newly exported by transition.ts; each leaf carries meta.actor so one source of truth drives both machines.
+- [x] **87** Per-step actor registry with state-level and default fallback
+  <sub>Each state and step needs its own payload logic · spec §8 · T01, T02 · **critical** · 3 h · needs 86 (DECIDED compound state mirrors transitio)</sub>
+  > domain/actors.ts: actorFor(engagement, step) = stepActors[step] ?? stateActors[engagement] ?? defaultActor, with registerStepActor / registerStateActor. Each actor builds the payload for its own step and creates the next step; defaultActor does both generically from the row template.
+- [x] **88** Run actor Effects on the transaction fiber instead of XState async invoke
+  <sub>A new fiber loses the transaction connection and deadlocks on FOR UPDATE · spec §8 · T01 · **critical** · 3 h · needs 87 (Per-step actor registry with state-level)</sub>
+  > First attempt used fromPromise actors and RUN_DB_TESTS timed out at 5s because markActionQueued blocked on the row locked by the outer transaction. Effect 4 withTransaction provides the connection through the fiber context, so pipeline.ts driveFlow now runs pullStage, actor.decide and sendStage inside SqlClient.withTransaction: the state selects the actor, the driver executes it.
+- [x] **89** Tests for per-step routing, actor precedence and post-consolidation integration
+  <sub>Routing and fallback must hold without a database · T01, T02, T15 · high · 3 h · needs 86 (DECIDED compound state mirrors transitio), 87 (Per-step actor registry with state-level)</sub>
+  > tests/orchestrator-machine.test.ts (routing across NOT_OPENED/OPENED/CLICKED/REPLIED, stale and failure routes), tests/actors.test.ts (step beats state beats default, persistNextStep no-op), tests/flow.integration.test.ts against Postgres. bun run check: 65 pass, 3 skip, 0 fail.
+- [x] **90** Leadership open-questions doc (run cadence, step delays, Brevo, deploy, templates)
+  <sub>Five production decisions block go-live · low · 1 h</sub>
+  > docs/OPEN_QUESTIONS_FOR_LEADERSHIP.md and docs/OPEN_QUESTIONS_EMAIL.docx record the current state plus the decision needed: daily device cron, NO_2 delay_days = 2 (about 2-3 days once daily cron granularity is included), Brevo via EMAIL_PROVIDER + BREVO_API_KEY on the worker, Postgres + Bun host + Cloudflare via Alchemy, and placeholder seed templates needing real copy.
 
 ---
 
@@ -408,6 +432,8 @@ Tasks that block the most downstream work:
 - **69** XState v5 machine for lead engagement states (NEW/NOT_OPENED/OPENED/CLICKED/REPLIED/SUPPRESSED) — unlocks 5 task(s)
 - **70** Transition-table, precedence and branch-switch tests over the XState machine — unlocks 1 task(s)
 - **73** Resend webhook normalization to DomainEvent using SendPayload.tags correlation — unlocks 2 task(s)
-- **77** Hierarchical state machine: sequence steps (NO_/O_/C_/R_ 1-3 + COMPLETE) as child states — unlocks 1 task(s)
-- **79** Scheduler DB queries (loadDueActions createNextAction markActionQueued insertSendAttempt) — unlocks 1 task(s)
-- **80** Scheduler tick + SendPayload builder + local/Cloudflare queue publisher — unlocks 2 task(s)
+- **77** Hierarchical state machine: sequence steps (NO_/O_/C_/R_ 1-3 + COMPLETE) as child states — unlocks 2 task(s)
+- **79** Scheduler DB queries (loadDueActions createNextAction markActionQueued insertSendAttempt) — unlocks 2 task(s)
+- **80** Scheduler tick + SendPayload builder + local/Cloudflare queue publisher — unlocks 3 task(s)
+- **86** DECIDED compound state mirrors transition.ts states and steps with per-step routing — unlocks 2 task(s)
+- **87** Per-step actor registry with state-level and default fallback — unlocks 2 task(s)

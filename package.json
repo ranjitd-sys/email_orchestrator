@@ -9,6 +9,8 @@
   "module": "index.ts",
   "scripts": {
     "tasks": "node scripts/sync-tasks.js",
+    "docs:diagrams": "python3 scripts/diagrams.py",
+    "docs:build": "python3 scripts/diagrams.py && python3 scripts/md2docx.py docs/WHAT_WE_BUILT.md /tmp/what-we-built.html && soffice --headless --convert-to docx:\"MS Word 2007 XML\" --outdir /tmp /tmp/what-we-built.html && mv /tmp/what-we-built.docx docs/WHAT_WE_BUILT.docx",
     "test": "bun test",
     "test:runtime": "bun test apps/orchestrator tests",
     "typecheck": "tsc --noEmit",

@@ -14,4 +14,4 @@ sprint,start_date,end_date,phases,task_count,hours,critical_done,task_ids,goal
 13,2026-11-06,2026-11-09,CF Worker,4,12,4/4,59 60 61 62,Close out: queue(batch env ctx) handler with per-message try/catch
 14,2026-11-10,2026-11-11,CF Worker + Hardening,3,9,0/0,63 64 65,Wrap-up and cleanup
 15,2026-11-12,2026-11-13,Hardening,3,11,0/0,66 67 68,Wrap-up and cleanup
-16,2026-11-06,2026-11-09,Domain engine + Scheduler + sequences,7,24,5/5,77 78 79 80 81 82 83,Close out: hierarchical state machine: sequence steps (no_/o_/c_/r_ 1-3 + complete) as child states
+16,2026-11-06,2026-11-09,Domain engine + Scheduler + sequences + Scaffold,14,45,10/10,77 78 79 80 81 82 83 84 85 86 87 88 89 90,Close out: hierarchical state machine: sequence steps (no_/o_/c_/r_ 1-3 + complete) as child states
