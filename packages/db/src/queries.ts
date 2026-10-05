@@ -84,6 +84,54 @@ export const loadDueActions = (now: Date) =>
     `;
   });
 
+export const loadDueActionById = (actionId: string) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    const rows = yield* sql<DueActionRow>`
+      select
+        sa.id as action_id,
+        sa.dataset_id,
+        sa.lead_id,
+        sa.campaign_id,
+        sa.sequence_id,
+        sq.sequence_type,
+        sa.step_id,
+        st.step_code,
+        sa.template_id,
+        sa.domain_id,
+        sa.mailbox_id,
+        l.engagement_state,
+        l.email as to_email,
+        mb.email as from_email,
+        mb.display_name as from_name,
+        t.subject,
+        t.html,
+        t.text
+      from scheduled_actions sa
+      join sequences sq on sq.id = sa.sequence_id
+      join sequence_steps st on st.id = sa.step_id
+      join leads l on l.id = sa.lead_id
+      left join templates t on t.id = sa.template_id
+      left join mailboxes mb on mb.id = sa.mailbox_id
+      where sa.id = ${actionId}
+      for update of sa skip locked
+    `;
+    return rows[0] ?? null;
+  });
+
+export const loadDueActionIds = (now: Date) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    const rows = yield* sql<{ action_id: string }>`
+      select sa.id as action_id
+      from scheduled_actions sa
+      where sa.action_status = 'SCHEDULED'
+        and sa.execute_at <= ${now}
+      order by sa.execute_at
+    `;
+    return rows.map((r) => r.action_id);
+  });
+
 export const findStepByCode = (sequenceId: string, stepCode: string) =>
   Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient;
@@ -181,4 +229,137 @@ export const createFirstStep = (args: {
       where id = ${args.leadId}
     `;
     return { actionId: id, stepId: step.id };
+  });
+export interface PersistEmailEventInput {
+  providerEventId: string;
+  sendAttemptId: string | null;
+  leadId: string | null;
+  eventType: string;
+  occurredAt: Date | null;
+  raw: unknown;
+}
+
+export const persistEmailEvent = (input: PersistEmailEventInput) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    const result = yield* sql<{ id: string }>`
+      insert into email_events
+        (provider_event_id, send_attempt_id, lead_id, event_type, occurred_at, raw)
+      values
+        (${input.providerEventId}, ${input.sendAttemptId}, ${input.leadId},
+         ${input.eventType}, ${input.occurredAt}, ${JSON.stringify(input.raw)}::jsonb)
+      on conflict (provider_event_id) do nothing
+      returning id
+    `;
+    return result[0] ?? null;
+  });
+
+export interface AttemptRow {
+  id: string;
+  action_id: string;
+  lead_id: string;
+  dataset_id: string;
+  campaign_id: string;
+  sequence_id: string;
+  step_id: string;
+  engagement_state: string;
+}
+
+export const findAttemptByMessageId = (providerMessageId: string) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    const rows = yield* sql<AttemptRow>`
+      select
+        sa.id,
+        sa.action_id,
+        sa.lead_id,
+        sa.dataset_id,
+        sa.campaign_id,
+        sa.sequence_id,
+        sa.step_id,
+        l.engagement_state
+      from send_attempts sa
+      join leads l on l.id = sa.lead_id
+      where sa.provider_message_id = ${providerMessageId}
+        and sa.provider = 'resend'
+    `;
+    return rows[0] ?? null;
+  });
+
+export const findAttemptBySendAttemptId = (sendAttemptId: string) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    const rows = yield* sql<AttemptRow>`
+      select
+        sa.id,
+        sa.action_id,
+        sa.lead_id,
+        sa.dataset_id,
+        sa.campaign_id,
+        sa.sequence_id,
+        sa.step_id,
+        l.engagement_state
+      from send_attempts sa
+      join leads l on l.id = sa.lead_id
+      where sa.id = ${sendAttemptId}
+    `;
+    return rows[0] ?? null;
+  });
+
+export const loadLeadForUpdate = (leadId: string) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    const rows = yield* sql<{ id: string; engagement_state: string; email: string }>`
+      select id, engagement_state, email
+      from leads
+      where id = ${leadId}
+      for update
+    `;
+    return rows[0] ?? null;
+  });
+
+export const updateLeadState = (leadId: string, newState: string) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    yield* sql`
+      update leads set engagement_state = ${newState}, updated_at = now()
+      where id = ${leadId}
+    `;
+  });
+
+export const insertJobTransition = (input: {
+  leadId: string;
+  actionId: string | null;
+  fromState: string | null;
+  toState: string;
+  event: string;
+  reason: string;
+}) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    yield* sql`
+      insert into job_transitions (lead_id, action_id, from_state, to_state, event, reason)
+      values (${input.leadId}, ${input.actionId}, ${input.fromState}, ${input.toState}, ${input.event}, ${input.reason})
+    `;
+  });
+
+export const cancelActiveActionsExceptTerminal = (leadId: string) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    yield* sql`
+      update scheduled_actions
+      set action_status = 'CANCELLED', cancelled_at = now(), updated_at = now()
+      where lead_id = ${leadId}
+        and action_status in ('SCHEDULED', 'QUEUED', 'PROCESSING', 'RETRY_SCHEDULED')
+    `;
+  });
+
+export const updateSendAttemptAccepted = (sendAttemptId: string, providerMessageId: string) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    yield* sql`
+      update send_attempts
+      set provider_message_id = ${providerMessageId}, status = 'ACCEPTED', accepted_at = now()
+      where id = ${sendAttemptId}
+    `;
   });

@@ -47,6 +47,13 @@ const INITIAL_STEP: Record<"NOT_OPENED" | "OPENED" | "CLICKED" | "REPLIED", Step
   REPLIED: "R_1",
 };
 
+export const STEP_SEQUENCE = {
+  NOT_OPENED: ["NO_1", "NO_2", "NO_3"],
+  OPENED: ["O_1", "O_2", "O_3"],
+  CLICKED: ["C_1", "C_2", "C_3"],
+  REPLIED: ["R_1", "R_2", "R_3"],
+} as const satisfies Record<"NOT_OPENED" | "OPENED" | "CLICKED" | "REPLIED", readonly StepCode[]>;
+
 const push = (action: TransitionAction) =>
   assign<TransitionContext, TransitionEvent, NonReducibleUnknown, TransitionEvent, never>(
     ({ context }) => ({ actions: [...context.actions, action] }),

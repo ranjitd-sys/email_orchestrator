@@ -9,7 +9,7 @@ import {
   SEED_CAMPAIGN_ID,
   SEED_DATASET_ID,
 } from "@email/db";
-import { runTick } from "../src/scheduler/tick.ts";
+import { runTick } from "../src/domain/tick.ts";
 import { LocalQueue } from "../src/queue/publisher.ts";
 
 const enabled = process.env.DATABASE_URL !== undefined && process.env.RUN_DB_TESTS === "1";

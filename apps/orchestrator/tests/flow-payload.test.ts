@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { DueActionRow } from "@email/db";
-import { buildSendPayload } from "../src/scheduler/payload.ts";
+import { buildSendPayload } from "../src/domain/payload.ts";
 
 const row: DueActionRow = {
   action_id: "a1",

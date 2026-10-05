@@ -21,7 +21,7 @@
     "db:reset": "docker compose down -v && docker compose up -d",
     "db:migrate": "bun run packages/db/src/migrate.ts",
     "db:seed": "bun run packages/db/src/seed.ts",
-    "scheduler:tick": "bun run apps/orchestrator/src/scheduler/run.ts",
+    "scheduler:tick": "bun run apps/orchestrator/src/domain/run.ts",
     "db:psql": "docker exec -it email-pg psql -U email -d email_orchestrator",
     "worker:plan": "bun run --cwd apps/worker plan",
     "worker:deploy": "bun run --cwd apps/worker deploy",
