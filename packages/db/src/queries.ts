@@ -14,6 +14,7 @@ export interface DueActionRow {
   domain_id: string | null;
   mailbox_id: string | null;
   engagement_state: string;
+  first_name?: string | null;
   to_email: string;
   from_email: string | null;
   from_name: string | null;
@@ -65,6 +66,7 @@ export const loadDueActions = (now: Date) =>
         sa.domain_id,
         sa.mailbox_id,
         l.engagement_state,
+        l.first_name,
         l.email as to_email,
         mb.email as from_email,
         mb.display_name as from_name,
@@ -101,6 +103,7 @@ export const loadDueActionById = (actionId: string) =>
         sa.domain_id,
         sa.mailbox_id,
         l.engagement_state,
+        l.first_name,
         l.email as to_email,
         mb.email as from_email,
         mb.display_name as from_name,

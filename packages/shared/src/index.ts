@@ -15,6 +15,8 @@ export const STEP_CODES = [
   "NO_1",
   "NO_2",
   "NO_3",
+  "NO_4",
+  "NO_5",
   "O_1",
   "O_2",
   "O_3",

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { DueActionRow } from "@email/db";
-import { buildSendPayload } from "../src/domain/payload.ts";
+import { buildSendPayload, mergeFields } from "../src/domain/payload.ts";
 
 const row: DueActionRow = {
   action_id: "a1",
@@ -52,5 +52,33 @@ describe("buildSendPayload", () => {
     expect(payload.from).toBe("");
     expect(payload.html).toBeUndefined();
     expect(payload.text).toBeUndefined();
+  });
+
+  test("merges first_name and links into subject, html and text", () => {
+    const merged = buildSendPayload(
+      {
+        ...row,
+        first_name: "Ranjit",
+        subject: "Hi {{first_name}}",
+        html: '<p>Hi {{first_name}}, see <a href="{{demo_link}}">this</a></p>',
+        text: "Hi {{first_name}}\nUnsubscribe: {{unsubscribe_url}}",
+      },
+      "attempt_3",
+    );
+    expect(merged.subject).toBe("Hi Ranjit");
+    expect(merged.html).toContain("Hi Ranjit,");
+    expect(merged.html).toContain("https://deepecom.example.com/demo");
+    expect(merged.text).toContain("Hi Ranjit");
+    expect(merged.text).toContain("https://deepecom.example.com/unsubscribe");
+  });
+
+  test("greets with a fallback when first_name is missing", () => {
+    const merged = buildSendPayload({ ...row, first_name: null, subject: "Hi {{first_name}}" }, "attempt_4");
+    expect(merged.subject).toBe("Hi there");
+  });
+
+  test("mergeFields leaves unknown placeholders empty", () => {
+    expect(mergeFields("a {{unknown}} b", {})).toBe("a  b");
+    expect(mergeFields(null, {})).toBe("");
   });
 });

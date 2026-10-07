@@ -132,13 +132,19 @@ describe("transition §3 (hierarchical)", () => {
 });
 
 describe("transition NEXT_STEP advancement", () => {
-  test("NOT_OPENED advances NO_1 -> NO_2 -> NO_3 -> COMPLETE", () => {
+  test("NOT_OPENED advances NO_1 -> NO_2 -> NO_3 -> NO_4 -> NO_5 -> COMPLETE", () => {
     let r = transition(at("NOT_OPENED", "NO_1"), "NEXT_STEP");
     expect(r.step).toBe("NO_2");
     expect(r.actions).toEqual([{ kind: "CREATE_STEP", stepCode: "NO_2" }]);
     r = transition({ engagement: r.engagement, step: r.step }, "NEXT_STEP");
     expect(r.step).toBe("NO_3");
     expect(r.actions).toEqual([{ kind: "CREATE_STEP", stepCode: "NO_3" }]);
+    r = transition({ engagement: r.engagement, step: r.step }, "NEXT_STEP");
+    expect(r.step).toBe("NO_4");
+    expect(r.actions).toEqual([{ kind: "CREATE_STEP", stepCode: "NO_4" }]);
+    r = transition({ engagement: r.engagement, step: r.step }, "NEXT_STEP");
+    expect(r.step).toBe("NO_5");
+    expect(r.actions).toEqual([{ kind: "CREATE_STEP", stepCode: "NO_5" }]);
     r = transition({ engagement: r.engagement, step: r.step }, "NEXT_STEP");
     expect(r.step).toBe("COMPLETE");
     expect(r.actions).toEqual([{ kind: "COMPLETE_SEQUENCE", sequenceType: "NOT_OPENED" }]);

@@ -48,7 +48,7 @@ const INITIAL_STEP: Record<"NOT_OPENED" | "OPENED" | "CLICKED" | "REPLIED", Step
 };
 
 export const STEP_SEQUENCE = {
-  NOT_OPENED: ["NO_1", "NO_2", "NO_3"],
+  NOT_OPENED: ["NO_1", "NO_2", "NO_3", "NO_4", "NO_5"],
   OPENED: ["O_1", "O_2", "O_3"],
   CLICKED: ["C_1", "C_2", "C_3"],
   REPLIED: ["R_1", "R_2", "R_3"],
@@ -87,6 +87,8 @@ export const engagementMachine = setup({
     createClicked: push({ kind: "CREATE_SEQUENCE", sequenceType: "CLICKED" }),
     createNo2: push(createStepAction("NO_2")),
     createNo3: push(createStepAction("NO_3")),
+    createNo4: push(createStepAction("NO_4")),
+    createNo5: push(createStepAction("NO_5")),
     completeNotOpened: push(completeSequenceAction("NOT_OPENED")),
     createO2: push(createStepAction("O_2")),
     createO3: push(createStepAction("O_3")),
@@ -127,7 +129,9 @@ export const engagementMachine = setup({
       states: {
         NO_1: { on: { NEXT_STEP: { target: "NO_2", actions: "createNo2" } } },
         NO_2: { on: { NEXT_STEP: { target: "NO_3", actions: "createNo3" } } },
-        NO_3: { on: { NEXT_STEP: { target: "COMPLETE", actions: "completeNotOpened" } } },
+        NO_3: { on: { NEXT_STEP: { target: "NO_4", actions: "createNo4" } } },
+        NO_4: { on: { NEXT_STEP: { target: "NO_5", actions: "createNo5" } } },
+        NO_5: { on: { NEXT_STEP: { target: "COMPLETE", actions: "completeNotOpened" } } },
         COMPLETE: {},
       },
     },

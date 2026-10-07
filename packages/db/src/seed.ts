@@ -2,6 +2,7 @@ import * as Redacted from "effect/Redacted";
 import * as Effect from "effect/Effect";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as PgClient from "@effect/sql-pg/PgClient";
+import { renderTemplate, stepEmailTemplate } from "./email-templates.ts";
 
 const D = "10000000-0000-0000-0000-000000000001";
 const C = "20000000-0000-0000-0000-000000000001";
@@ -18,16 +19,21 @@ const SEQ: Record<string, string> = {
   CLICKED: "50000000-0000-0000-0000-000000000003",
 };
 
+// Step ids are derived from array position, so append new codes at the end to
+// keep the existing ids stable. NOT_OPENED is a 5-step sequence (order 4 and 5
+// live at the bottom of this list).
 const steps = [
   { code: "NO_1", seq: "NOT_OPENED", order: 1, delay: 0 },
   { code: "NO_2", seq: "NOT_OPENED", order: 2, delay: 2 },
-  { code: "NO_3", seq: "NOT_OPENED", order: 3, delay: 3 },
+  { code: "NO_3", seq: "NOT_OPENED", order: 3, delay: 2 },
   { code: "O_1", seq: "OPENED", order: 1, delay: 0 },
   { code: "O_2", seq: "OPENED", order: 2, delay: 2 },
   { code: "O_3", seq: "OPENED", order: 3, delay: 3 },
   { code: "C_1", seq: "CLICKED", order: 1, delay: 0 },
   { code: "C_2", seq: "CLICKED", order: 2, delay: 2 },
   { code: "C_3", seq: "CLICKED", order: 3, delay: 3 },
+  { code: "NO_4", seq: "NOT_OPENED", order: 4, delay: 3 },
+  { code: "NO_5", seq: "NOT_OPENED", order: 5, delay: 3 },
 ] as const;
 
 function stepId(code: string): string {
@@ -64,11 +70,19 @@ export const seedProgram = Effect.gen(function* () {
   `;
 
   for (const s of steps) {
+    const template = stepEmailTemplate(s.code);
+    const rendered = template ? renderTemplate(template) : null;
     yield* sql`
       insert into templates (id, campaign_id, name, subject, html, text)
-      values (${templateId(s.code)}, ${C}, ${s.code},
-              ${`${s.code} subject`}, ${`<p>${s.code} html</p>`}, ${`${s.code} text`})
-      on conflict do nothing
+      values (${templateId(s.code)}, ${C}, ${template?.name ?? s.code},
+              ${template?.subject ?? `${s.code} subject`},
+              ${rendered?.html ?? `<p>${s.code} html</p>`},
+              ${rendered?.text ?? `${s.code} text`})
+      on conflict (id) do update set
+        name = excluded.name,
+        subject = excluded.subject,
+        html = excluded.html,
+        text = excluded.text
     `;
   }
 
@@ -84,7 +98,10 @@ export const seedProgram = Effect.gen(function* () {
     yield* sql`
       insert into sequence_steps (id, sequence_id, step_code, step_order, delay_days, template_id)
       values (${stepId(s.code)}, ${SEQ[s.seq]}, ${s.code}, ${s.order}, ${s.delay}, ${templateId(s.code)})
-      on conflict do nothing
+      on conflict (id) do update set
+        step_order = excluded.step_order,
+        delay_days = excluded.delay_days,
+        template_id = excluded.template_id
     `;
   }
 

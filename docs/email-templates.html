@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email Templates — DeepEcom</title>
+<style>
+  :root { --ink:#18202c; --muted:#6c7888; --line:#e2e8f0; --brand:#2563eb; --bg:#f6f8fb; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color:var(--ink); background:var(--bg); }
+  .hero { background: linear-gradient(135deg,#1e3a8a,#2563eb); color:#fff; padding:40px 32px 34px; }
+  .hero h1 { margin:0 0 8px; font-size:30px; }
+  .hero p { margin:0; color:#dbeafe; }
+  .hero .chips { margin-top:16px; display:flex; flex-wrap:wrap; gap:8px; }
+  .hero .chip { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); padding:4px 10px; border-radius:999px; font-size:12.5px; }
+  .layout { display:grid; grid-template-columns: 190px 1fr; gap:24px; max-width:1180px; margin:0 auto; padding:24px; }
+  nav.toc { position:sticky; top:24px; align-self:start; background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; }
+  nav.toc a { display:block; text-decoration:none; color:var(--ink); border-radius:8px; padding:4px 8px; font-size:13.5px; }
+  nav.toc a:hover { background:var(--bg); }
+  nav.toc .nav-seq { font-weight:700; margin-top:6px; color:var(--brand); }
+  nav.toc .nav-step { color:var(--muted); margin-left:10px; font-family: ui-monospace, Consolas, monospace; }
+  main { min-width:0; }
+  .sequence { margin-bottom:36px; }
+  .sequence-head { margin-bottom:14px; }
+  .sequence-head h2 { margin:0; font-size:22px; }
+  .sequence-head p { margin:4px 0 0; color:var(--muted); font-size:14px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:20px; }
+  .card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; border-bottom:1px solid var(--line); padding-bottom:12px; margin-bottom:14px; }
+  .card-head h3 { margin:6px 0 0; font-size:16px; }
+  .step { font-family: ui-monospace, Consolas, monospace; font-weight:700; color:#fff; background:var(--brand); padding:2px 9px; border-radius:6px; font-size:13px; }
+  .delay { font-size:12.5px; color:var(--muted); white-space:nowrap; }
+  .field { display:flex; gap:10px; margin:8px 0; font-size:14.5px; }
+  .label { flex:0 0 92px; color:var(--muted); font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; padding-top:2px; }
+  .value { font-weight:600; }
+  .alts { margin:0; padding-left:18px; color:var(--muted); }
+  .preview-wrap { margin:16px 0; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .preview-bar { display:flex; align-items:center; gap:6px; background:#eef2f7; padding:8px 12px; border-bottom:1px solid var(--line); }
+  .preview-bar .dot { width:9px; height:9px; border-radius:50%; background:#cdd6e0; }
+  .preview-title { margin-left:8px; font-size:12px; color:var(--muted); }
+  .preview-body { background:#e9eef5; padding:26px 18px; }
+  /* the email's own root <div> becomes the white card, centered */
+  .preview-body > div { background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:26px 24px; box-shadow:0 1px 3px rgba(15,23,42,.06); }
+  .preview-body p { margin:0 0 14px; }
+  .preview-body ul { margin:0 0 14px; padding-left:22px; }
+  .preview-body li { margin-bottom:6px; }
+  .preview-body blockquote { margin:16px 0; }
+  .preview-body a { color:var(--brand); }
+  details { border-top:1px solid var(--line); padding:10px 0 0; margin-top:10px; }
+  summary { cursor:pointer; font-size:13.5px; color:var(--brand); font-weight:600; }
+  pre { background:#0f172a; color:#e2e8f0; padding:14px; border-radius:10px; overflow:auto; font-size:12.5px; line-height:1.5; margin:10px 0 0; white-space:pre-wrap; word-break:break-word; }
+  footer { text-align:center; color:var(--muted); font-size:12.5px; padding:24px; }
+  @media (max-width: 820px) { .layout { grid-template-columns: 1fr; } nav.toc { position:static; } }
+  @media print { .hero { background:#1e3a8a !important; -webkit-print-color-adjust:exact; } details { page-break-inside:avoid; } .card { page-break-inside:avoid; } }
+</style>
+</head>
+<body>
+<header class="hero">
+  <h1>Email Templates</h1>
+  <p>All 11 templates across the NOT_OPENED, OPENED and CLICKED sequences.</p>
+  <div class="chips">
+    <span class="chip">Merge: {{first_name}}</span>
+    <span class="chip">{{sender_name}}</span>
+    <span class="chip">{{sender_title}}</span>
+    <span class="chip">{{demo_link}}</span>
+    <span class="chip">{{unsubscribe_url}}</span>
+  </div>
+</header>
+<div class="layout">
+  <nav class="toc">
+    <a class="nav-seq" href="#top">Contents</a>
+    <a class="nav-seq" href="#NOT_OPENED">NOT_OPENED</a>
+  <a class="nav-step" href="#NO_1">NO_1</a><a class="nav-step" href="#NO_2">NO_2</a><a class="nav-step" href="#NO_3">NO_3</a><a class="nav-step" href="#NO_4">NO_4</a><a class="nav-step" href="#NO_5">NO_5</a><a class="nav-seq" href="#OPENED">OPENED</a>
+  <a class="nav-step" href="#O_1">O_1</a><a class="nav-step" href="#O_2">O_2</a><a class="nav-step" href="#O_3">O_3</a><a class="nav-seq" href="#CLICKED">CLICKED</a>
+  <a class="nav-step" href="#C_1">C_1</a><a class="nav-step" href="#C_2">C_2</a><a class="nav-step" href="#C_3">C_3</a>
+  </nav>
+  <main id="top">
+    
+  <section class="sequence" id="NOT_OPENED">
+    <div class="sequence-head">
+      <h2>NOT_OPENED</h2>
+      <p>The lead never opened the first email. · 5 steps</p>
+    </div>
+    
+  <article class="card" id="NO_1">
+    <div class="card-head">
+      <div>
+        <span class="step">NO_1</span>
+        <h3>NO_1 - Initial outreach</h3>
+      </div>
+      <span class="delay">sends immediately</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Subject</span>
+      <span class="value">End Spreadsheet Chaos: 20+ Hours Saved for Indian Ecommerce Owners</span>
+    </div>
+    <div class="field"><span class="label">Alternates</span><ul class="alts"><li>How Top Amazon Sellers Automate GST &amp; Boost Profits - Free Demo Inside</li><li>Are You Still Doing Ecommerce Accounting the Hard Way?</li><li>Ecommerce accounting solved</li><li>Are you even making Profits on Amazon?</li></ul></div>
+
+    <div class="preview-wrap">
+      <div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="preview-title">Rendered preview</span></div>
+      <div class="preview-body"><div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a">
+<p>Hi Priya Sharma,</p>
+<p>Are endless spreadsheets, late-night reconciliations and GST headaches holding back your ecommerce growth?</p>
+<p>You didn't start your business to become a part-time accountant - yet every month you're stuck matching payments, fixing mismatches and dreading compliance. It isn't your fault; the old way is broken.</p>
+<p>DeepEcom automates your entire finance workflow across Amazon, Flipkart, Meesho and more:</p>
+<ul><li>Reclaim 20+ hours a week</li><li>GST & Tally-ready in minutes</li><li>Instant profit & tax clarity</li><li>No tech skills needed</li></ul>
+<p>Our users report 15% higher profit margins and zero GST discrepancies.</p>
+<p>Want to see how it works?</p>
+<p><a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none">Book a free 30-minute demo</a></p>
+<p>No contracts, no hidden fees. Ready to run your business, not let it run you?</p>
+<p>Tejes Pujara<br>Founder, DeepEcom</p>
+<p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px">You are receiving this because you are in our B2B list. <a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a">Unsubscribe</a></p>
+</div></div>
+    </div>
+
+    <details>
+      <summary>Plain text</summary>
+      <pre>Hi Priya Sharma,
+
+Are endless spreadsheets, late-night reconciliations and GST headaches holding back your ecommerce growth?
+
+You didn't start your business to become a part-time accountant - yet every month you're stuck matching payments, fixing mismatches and dreading compliance. It isn't your fault; the old way is broken.
+
+DeepEcom automates your entire finance workflow across Amazon, Flipkart, Meesho and more:
+
+- Reclaim 20+ hours a week
+- GST &amp; Tally-ready in minutes
+- Instant profit &amp; tax clarity
+- No tech skills needed
+
+Our users report 15% higher profit margins and zero GST discrepancies.
+
+Want to see how it works?
+
+Book a free 30-minute demo: https://deepecom.example.com/demo
+
+No contracts, no hidden fees. Ready to run your business, not let it run you?
+
+Tejes Pujara
+Founder, DeepEcom
+
+You are receiving this because you are in our B2B list.
+Unsubscribe: https://deepecom.example.com/unsubscribe</pre>
+    </details>
+    <details>
+      <summary>HTML source</summary>
+      <pre>&lt;div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a"&gt;
+&lt;p&gt;Hi Priya Sharma,&lt;/p&gt;
+&lt;p&gt;Are endless spreadsheets, late-night reconciliations and GST headaches holding back your ecommerce growth?&lt;/p&gt;
+&lt;p&gt;You didn't start your business to become a part-time accountant - yet every month you're stuck matching payments, fixing mismatches and dreading compliance. It isn't your fault; the old way is broken.&lt;/p&gt;
+&lt;p&gt;DeepEcom automates your entire finance workflow across Amazon, Flipkart, Meesho and more:&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Reclaim 20+ hours a week&lt;/li&gt;&lt;li&gt;GST &amp; Tally-ready in minutes&lt;/li&gt;&lt;li&gt;Instant profit &amp; tax clarity&lt;/li&gt;&lt;li&gt;No tech skills needed&lt;/li&gt;&lt;/ul&gt;
+&lt;p&gt;Our users report 15% higher profit margins and zero GST discrepancies.&lt;/p&gt;
+&lt;p&gt;Want to see how it works?&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none"&gt;Book a free 30-minute demo&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;No contracts, no hidden fees. Ready to run your business, not let it run you?&lt;/p&gt;
+&lt;p&gt;Tejes Pujara&lt;br&gt;Founder, DeepEcom&lt;/p&gt;
+&lt;p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px"&gt;You are receiving this because you are in our B2B list. &lt;a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a"&gt;Unsubscribe&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;</pre>
+    </details>
+  </article>
+  <article class="card" id="NO_2">
+    <div class="card-head">
+      <div>
+        <span class="step">NO_2</span>
+        <h3>NO_2 - Value reminder &amp; social proof</h3>
+      </div>
+      <span class="delay">+2 days after previous</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Subject</span>
+      <span class="value">How Amazon Sellers Cut Reconciliation Time by 95%</span>
+    </div>
+    
+
+    <div class="preview-wrap">
+      <div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="preview-title">Rendered preview</span></div>
+      <div class="preview-body"><div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a">
+<p>Hi Priya Sharma,</p>
+<p>Just following up - many Amazon sellers like you are switching to DeepEcom and seeing results fast.</p>
+<p>Here's what they're saying:</p>
+<blockquote style="margin:16px 0;padding:8px 16px;border-left:3px solid #2563eb;color:#444444">We went from monthly guesswork to daily certainty. Our reconciliation time dropped from 45 hours to 2 hours per week. The accuracy improvement alone saved us Rs 1.5 lakhs in the first month.</blockquote>
+<p>- Ecommerce CFO</p>
+<p>If you're ready to stop losing time and money to manual finance chaos, book your free demo.</p>
+<p><a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none">Book your free demo</a></p>
+<p>Still have questions? Just reply and I'll share more success stories from sellers in your industry.</p>
+<p>Tejes Pujara<br>Founder, DeepEcom</p>
+<p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px">You are receiving this because you are in our B2B list. <a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a">Unsubscribe</a></p>
+</div></div>
+    </div>
+
+    <details>
+      <summary>Plain text</summary>
+      <pre>Hi Priya Sharma,
+
+Just following up - many Amazon sellers like you are switching to DeepEcom and seeing results fast.
+
+Here's what they're saying:
+
+"We went from monthly guesswork to daily certainty. Our reconciliation time dropped from 45 hours to 2 hours per week. The accuracy improvement alone saved us Rs 1.5 lakhs in the first month."
+
+- Ecommerce CFO
+
+If you're ready to stop losing time and money to manual finance chaos, book your free demo.
+
+Book your free demo: https://deepecom.example.com/demo
+
+Still have questions? Just reply and I'll share more success stories from sellers in your industry.
+
+Tejes Pujara
+Founder, DeepEcom
+
+You are receiving this because you are in our B2B list.
+Unsubscribe: https://deepecom.example.com/unsubscribe</pre>
+    </details>
+    <details>
+      <summary>HTML source</summary>
+      <pre>&lt;div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a"&gt;
+&lt;p&gt;Hi Priya Sharma,&lt;/p&gt;
+&lt;p&gt;Just following up - many Amazon sellers like you are switching to DeepEcom and seeing results fast.&lt;/p&gt;
+&lt;p&gt;Here's what they're saying:&lt;/p&gt;
+&lt;blockquote style="margin:16px 0;padding:8px 16px;border-left:3px solid #2563eb;color:#444444"&gt;We went from monthly guesswork to daily certainty. Our reconciliation time dropped from 45 hours to 2 hours per week. The accuracy improvement alone saved us Rs 1.5 lakhs in the first month.&lt;/blockquote&gt;
+&lt;p&gt;- Ecommerce CFO&lt;/p&gt;
+&lt;p&gt;If you're ready to stop losing time and money to manual finance chaos, book your free demo.&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none"&gt;Book your free demo&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Still have questions? Just reply and I'll share more success stories from sellers in your industry.&lt;/p&gt;
+&lt;p&gt;Tejes Pujara&lt;br&gt;Founder, DeepEcom&lt;/p&gt;
+&lt;p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px"&gt;You are receiving this because you are in our B2B list. &lt;a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a"&gt;Unsubscribe&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;</pre>
+    </details>
+  </article>
+  <article class="card" id="NO_3">
+    <div class="card-head">
+      <div>
+        <span class="step">NO_3</span>
+        <h3>NO_3 - Pain, agitate, solve + urgency</h3>
+      </div>
+      <span class="delay">+2 days after previous</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Subject</span>
+      <span class="value">Don't Let Accounting Bottlenecks Stall Your Amazon Growth</span>
+    </div>
+    <div class="field"><span class="label">Alternates</span><ul class="alts"><li>Still incurring losses on Amazon Selling? Track your real profits here!</li></ul></div>
+
+    <div class="preview-wrap">
+      <div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="preview-title">Rendered preview</span></div>
+      <div class="preview-body"><div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a">
+<p>Hi Priya Sharma,</p>
+<p>Every hour spent fixing finance issues is time stolen from growing your ecommerce business.</p>
+<ul><li>Manual payment matching = missed profit leaks</li><li>GST errors = risk of penalties</li><li>Scattered data = slow decisions</li></ul>
+<p>DeepEcom fixes all of this - fast:</p>
+<ul><li>50+ integrations (Amazon, Flipkart, Meesho, Tally, Zoho and more)</li><li>One-click GST filing</li><li>Real-time profit tracking</li></ul>
+<p>Slots for this week's free demo are filling up. Reserve your spot now.</p>
+<p><a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none">Reserve your spot</a></p>
+<p>Prefer a quick call instead? Let me know.</p>
+<p>Tejes Pujara<br>Founder, DeepEcom</p>
+<p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px">You are receiving this because you are in our B2B list. <a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a">Unsubscribe</a></p>
+</div></div>
+    </div>
+
+    <details>
+      <summary>Plain text</summary>
+      <pre>Hi Priya Sharma,
+
+Every hour spent fixing finance issues is time stolen from growing your ecommerce business.
+
+- Manual payment matching = missed profit leaks
+- GST errors = risk of penalties
+- Scattered data = slow decisions
+
+DeepEcom fixes all of this - fast:
+
+- 50+ integrations (Amazon, Flipkart, Meesho, Tally, Zoho and more)
+- One-click GST filing
+- Real-time profit tracking
+
+Slots for this week's free demo are filling up. Reserve your spot now.
+
+Reserve your spot: https://deepecom.example.com/demo
+
+Prefer a quick call instead? Let me know.
+
+Tejes Pujara
+Founder, DeepEcom
+
+You are receiving this because you are in our B2B list.
+Unsubscribe: https://deepecom.example.com/unsubscribe</pre>
+    </details>
+    <details>
+      <summary>HTML source</summary>
+      <pre>&lt;div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a"&gt;
+&lt;p&gt;Hi Priya Sharma,&lt;/p&gt;
+&lt;p&gt;Every hour spent fixing finance issues is time stolen from growing your ecommerce business.&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Manual payment matching = missed profit leaks&lt;/li&gt;&lt;li&gt;GST errors = risk of penalties&lt;/li&gt;&lt;li&gt;Scattered data = slow decisions&lt;/li&gt;&lt;/ul&gt;
+&lt;p&gt;DeepEcom fixes all of this - fast:&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;50+ integrations (Amazon, Flipkart, Meesho, Tally, Zoho and more)&lt;/li&gt;&lt;li&gt;One-click GST filing&lt;/li&gt;&lt;li&gt;Real-time profit tracking&lt;/li&gt;&lt;/ul&gt;
+&lt;p&gt;Slots for this week's free demo are filling up. Reserve your spot now.&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none"&gt;Reserve your spot&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Prefer a quick call instead? Let me know.&lt;/p&gt;
+&lt;p&gt;Tejes Pujara&lt;br&gt;Founder, DeepEcom&lt;/p&gt;
+&lt;p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px"&gt;You are receiving this because you are in our B2B list. &lt;a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a"&gt;Unsubscribe&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;</pre>
+    </details>
+  </article>
+  <article class="card" id="NO_4">
+    <div class="card-head">
+      <div>
+        <span class="step">NO_4</span>
+        <h3>NO_4 - Useful resource</h3>
+      </div>
+      <span class="delay">+3 days after previous</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Subject</span>
+      <span class="value">4 Hacks to Automate Ecommerce GST (Free Guide Inside)</span>
+    </div>
+    <div class="field"><span class="label">Alternates</span><ul class="alts"><li>Audit-Proof Your Amazon Business - Here's How</li></ul></div>
+
+    <div class="preview-wrap">
+      <div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="preview-title">Rendered preview</span></div>
+      <div class="preview-body"><div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a">
+<p>Hi Priya Sharma,</p>
+<p>I know you're busy, so here's something useful - 4 must-do hacks for ecommerce sellers:</p>
+<ul><li>Automate GST compliance (goodbye manual errors)</li><li>Daily TCS reconciliation</li><li>Pre-calculate GST for promo pricing</li><li>Digitally store every tax invoice</li></ul>
+<p>DeepEcom makes all of this a reality - no tech skills needed.</p>
+<p>If you'd like to see these hacks in action, book a free demo.</p>
+<p><a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none">Book a free demo</a></p>
+<p>No pressure - just pure value.</p>
+<p>Tejes Pujara<br>Founder, DeepEcom</p>
+<p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px">You are receiving this because you are in our B2B list. <a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a">Unsubscribe</a></p>
+</div></div>
+    </div>
+
+    <details>
+      <summary>Plain text</summary>
+      <pre>Hi Priya Sharma,
+
+I know you're busy, so here's something useful - 4 must-do hacks for ecommerce sellers:
+
+- Automate GST compliance (goodbye manual errors)
+- Daily TCS reconciliation
+- Pre-calculate GST for promo pricing
+- Digitally store every tax invoice
+
+DeepEcom makes all of this a reality - no tech skills needed.
+
+If you'd like to see these hacks in action, book a free demo.
+
+Book a free demo: https://deepecom.example.com/demo
+
+No pressure - just pure value.
+
+Tejes Pujara
+Founder, DeepEcom
+
+You are receiving this because you are in our B2B list.
+Unsubscribe: https://deepecom.example.com/unsubscribe</pre>
+    </details>
+    <details>
+      <summary>HTML source</summary>
+      <pre>&lt;div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a"&gt;
+&lt;p&gt;Hi Priya Sharma,&lt;/p&gt;
+&lt;p&gt;I know you're busy, so here's something useful - 4 must-do hacks for ecommerce sellers:&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Automate GST compliance (goodbye manual errors)&lt;/li&gt;&lt;li&gt;Daily TCS reconciliation&lt;/li&gt;&lt;li&gt;Pre-calculate GST for promo pricing&lt;/li&gt;&lt;li&gt;Digitally store every tax invoice&lt;/li&gt;&lt;/ul&gt;
+&lt;p&gt;DeepEcom makes all of this a reality - no tech skills needed.&lt;/p&gt;
+&lt;p&gt;If you'd like to see these hacks in action, book a free demo.&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none"&gt;Book a free demo&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;No pressure - just pure value.&lt;/p&gt;
+&lt;p&gt;Tejes Pujara&lt;br&gt;Founder, DeepEcom&lt;/p&gt;
+&lt;p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px"&gt;You are receiving this because you are in our B2B list. &lt;a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a"&gt;Unsubscribe&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;</pre>
+    </details>
+  </article>
+  <article class="card" id="NO_5">
+    <div class="card-head">
+      <div>
+        <span class="step">NO_5</span>
+        <h3>NO_5 - Final nudge / breakup</h3>
+      </div>
+      <span class="delay">+3 days after previous</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Subject</span>
+      <span class="value">Should I Close Your File?</span>
+    </div>
+    <div class="field"><span class="label">Alternates</span><ul class="alts"><li>Last Chance: See How Top Sellers Automate Ecommerce Finance</li></ul></div>
+
+    <div class="preview-wrap">
+      <div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="preview-title">Rendered preview</span></div>
+      <div class="preview-body"><div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a">
+<p>Hi Priya Sharma,</p>
+<p>I haven't heard back, so I'll assume now isn't the right time.</p>
+<p>If you're ever ready to ditch manual accounting and see how ecommerce leaders automate GST, reconciliation and profit tracking, you can always book a free demo.</p>
+<p><a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none">Book a free demo</a></p>
+<p>Wishing you continued success!</p>
+<p>Tejes Pujara<br>Founder, DeepEcom</p>
+<p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px">You are receiving this because you are in our B2B list. <a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a">Unsubscribe</a></p>
+</div></div>
+    </div>
+
+    <details>
+      <summary>Plain text</summary>
+      <pre>Hi Priya Sharma,
+
+I haven't heard back, so I'll assume now isn't the right time.
+
+If you're ever ready to ditch manual accounting and see how ecommerce leaders automate GST, reconciliation and profit tracking, you can always book a free demo.
+
+Book a free demo: https://deepecom.example.com/demo
+
+Wishing you continued success!
+
+Tejes Pujara
+Founder, DeepEcom
+
+You are receiving this because you are in our B2B list.
+Unsubscribe: https://deepecom.example.com/unsubscribe</pre>
+    </details>
+    <details>
+      <summary>HTML source</summary>
+      <pre>&lt;div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a"&gt;
+&lt;p&gt;Hi Priya Sharma,&lt;/p&gt;
+&lt;p&gt;I haven't heard back, so I'll assume now isn't the right time.&lt;/p&gt;
+&lt;p&gt;If you're ever ready to ditch manual accounting and see how ecommerce leaders automate GST, reconciliation and profit tracking, you can always book a free demo.&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none"&gt;Book a free demo&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Wishing you continued success!&lt;/p&gt;
+&lt;p&gt;Tejes Pujara&lt;br&gt;Founder, DeepEcom&lt;/p&gt;
+&lt;p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px"&gt;You are receiving this because you are in our B2B list. &lt;a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a"&gt;Unsubscribe&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;</pre>
+    </details>
+  </article>
+  </section>
+  <section class="sequence" id="OPENED">
+    <div class="sequence-head">
+      <h2>OPENED</h2>
+      <p>The lead opened but did not click. · 3 steps</p>
+    </div>
+    
+  <article class="card" id="O_1">
+    <div class="card-head">
+      <div>
+        <span class="step">O_1</span>
+        <h3>O_1 - Opened, short version</h3>
+      </div>
+      <span class="delay">sends immediately</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Subject</span>
+      <span class="value">The 2-minute version</span>
+    </div>
+    
+
+    <div class="preview-wrap">
+      <div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="preview-title">Rendered preview</span></div>
+      <div class="preview-body"><div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a">
+<p>Hi Priya Sharma,</p>
+<p>Here's the short version of what I mentioned - most teams see results within the first month.</p>
+<p>Full breakdown:</p>
+<p><a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none">See the 2-minute overview</a></p>
+<p>Want a live walkthrough instead? Just reply and I'll set it up.</p>
+<p>Tejes Pujara<br>Founder, DeepEcom</p>
+<p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px">You are receiving this because you are in our B2B list. <a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a">Unsubscribe</a></p>
+</div></div>
+    </div>
+
+    <details>
+      <summary>Plain text</summary>
+      <pre>Hi Priya Sharma,
+
+Here's the short version of what I mentioned - most teams see results within the first month.
+
+Full breakdown:
+
+See the 2-minute overview: https://deepecom.example.com/demo
+
+Want a live walkthrough instead? Just reply and I'll set it up.
+
+Tejes Pujara
+Founder, DeepEcom
+
+You are receiving this because you are in our B2B list.
+Unsubscribe: https://deepecom.example.com/unsubscribe</pre>
+    </details>
+    <details>
+      <summary>HTML source</summary>
+      <pre>&lt;div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a"&gt;
+&lt;p&gt;Hi Priya Sharma,&lt;/p&gt;
+&lt;p&gt;Here's the short version of what I mentioned - most teams see results within the first month.&lt;/p&gt;
+&lt;p&gt;Full breakdown:&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none"&gt;See the 2-minute overview&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Want a live walkthrough instead? Just reply and I'll set it up.&lt;/p&gt;
+&lt;p&gt;Tejes Pujara&lt;br&gt;Founder, DeepEcom&lt;/p&gt;
+&lt;p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px"&gt;You are receiving this because you are in our B2B list. &lt;a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a"&gt;Unsubscribe&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;</pre>
+    </details>
+  </article>
+  <article class="card" id="O_2">
+    <div class="card-head">
+      <div>
+        <span class="step">O_2</span>
+        <h3>O_2 - Opened, before and after</h3>
+      </div>
+      <span class="delay">+2 days after previous</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Subject</span>
+      <span class="value">What DeepEcom looks like in practice</span>
+    </div>
+    
+
+    <div class="preview-wrap">
+      <div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="preview-title">Rendered preview</span></div>
+      <div class="preview-body"><div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a">
+<p>Hi Priya Sharma,</p>
+<p>A quick before and after from teams using DeepEcom:</p>
+<ul><li>45 hours to 2 hours of reconciliation per week</li><li>One-click GST filing</li><li>Real-time profit tracking</li></ul>
+<p>Grab a slot and I'll show you how this looks on your own data.</p>
+<p><a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none">Book a free demo</a></p>
+<p>Tejes Pujara<br>Founder, DeepEcom</p>
+<p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px">You are receiving this because you are in our B2B list. <a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a">Unsubscribe</a></p>
+</div></div>
+    </div>
+
+    <details>
+      <summary>Plain text</summary>
+      <pre>Hi Priya Sharma,
+
+A quick before and after from teams using DeepEcom:
+
+- 45 hours to 2 hours of reconciliation per week
+- One-click GST filing
+- Real-time profit tracking
+
+Grab a slot and I'll show you how this looks on your own data.
+
+Book a free demo: https://deepecom.example.com/demo
+
+Tejes Pujara
+Founder, DeepEcom
+
+You are receiving this because you are in our B2B list.
+Unsubscribe: https://deepecom.example.com/unsubscribe</pre>
+    </details>
+    <details>
+      <summary>HTML source</summary>
+      <pre>&lt;div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a"&gt;
+&lt;p&gt;Hi Priya Sharma,&lt;/p&gt;
+&lt;p&gt;A quick before and after from teams using DeepEcom:&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;45 hours to 2 hours of reconciliation per week&lt;/li&gt;&lt;li&gt;One-click GST filing&lt;/li&gt;&lt;li&gt;Real-time profit tracking&lt;/li&gt;&lt;/ul&gt;
+&lt;p&gt;Grab a slot and I'll show you how this looks on your own data.&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none"&gt;Book a free demo&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Tejes Pujara&lt;br&gt;Founder, DeepEcom&lt;/p&gt;
+&lt;p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px"&gt;You are receiving this because you are in our B2B list. &lt;a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a"&gt;Unsubscribe&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;</pre>
+    </details>
+  </article>
+  <article class="card" id="O_3">
+    <div class="card-head">
+      <div>
+        <span class="step">O_3</span>
+        <h3>O_3 - Opened, closing loop</h3>
+      </div>
+      <span class="delay">+3 days after previous</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Subject</span>
+      <span class="value">Should I stop here?</span>
+    </div>
+    
+
+    <div class="preview-wrap">
+      <div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="preview-title">Rendered preview</span></div>
+      <div class="preview-body"><div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a">
+<p>Hi Priya Sharma,</p>
+<p>I'll leave it here for now. If automating GST and profit tracking becomes a priority, you can book anytime.</p>
+<p><a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none">Book a free demo</a></p>
+<p>Tejes Pujara<br>Founder, DeepEcom</p>
+<p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px">You are receiving this because you are in our B2B list. <a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a">Unsubscribe</a></p>
+</div></div>
+    </div>
+
+    <details>
+      <summary>Plain text</summary>
+      <pre>Hi Priya Sharma,
+
+I'll leave it here for now. If automating GST and profit tracking becomes a priority, you can book anytime.
+
+Book a free demo: https://deepecom.example.com/demo
+
+Tejes Pujara
+Founder, DeepEcom
+
+You are receiving this because you are in our B2B list.
+Unsubscribe: https://deepecom.example.com/unsubscribe</pre>
+    </details>
+    <details>
+      <summary>HTML source</summary>
+      <pre>&lt;div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a"&gt;
+&lt;p&gt;Hi Priya Sharma,&lt;/p&gt;
+&lt;p&gt;I'll leave it here for now. If automating GST and profit tracking becomes a priority, you can book anytime.&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none"&gt;Book a free demo&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Tejes Pujara&lt;br&gt;Founder, DeepEcom&lt;/p&gt;
+&lt;p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px"&gt;You are receiving this because you are in our B2B list. &lt;a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a"&gt;Unsubscribe&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;</pre>
+    </details>
+  </article>
+  </section>
+  <section class="sequence" id="CLICKED">
+    <div class="sequence-head">
+      <h2>CLICKED</h2>
+      <p>The lead clicked, so intent is high. · 3 steps</p>
+    </div>
+    
+  <article class="card" id="C_1">
+    <div class="card-head">
+      <div>
+        <span class="step">C_1</span>
+        <h3>C_1 - Clicked, book a time</h3>
+      </div>
+      <span class="delay">sends immediately</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Subject</span>
+      <span class="value">Want me to book a time?</span>
+    </div>
+    
+
+    <div class="preview-wrap">
+      <div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="preview-title">Rendered preview</span></div>
+      <div class="preview-body"><div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a">
+<p>Hi Priya Sharma,</p>
+<p>Since you had a look, the easiest next step is a quick 15-minute call.</p>
+<p><a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none">Book a 15-minute call</a></p>
+<p>Or reply with two times that work and I'll set it up.</p>
+<p>Tejes Pujara<br>Founder, DeepEcom</p>
+<p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px">You are receiving this because you are in our B2B list. <a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a">Unsubscribe</a></p>
+</div></div>
+    </div>
+
+    <details>
+      <summary>Plain text</summary>
+      <pre>Hi Priya Sharma,
+
+Since you had a look, the easiest next step is a quick 15-minute call.
+
+Book a 15-minute call: https://deepecom.example.com/demo
+
+Or reply with two times that work and I'll set it up.
+
+Tejes Pujara
+Founder, DeepEcom
+
+You are receiving this because you are in our B2B list.
+Unsubscribe: https://deepecom.example.com/unsubscribe</pre>
+    </details>
+    <details>
+      <summary>HTML source</summary>
+      <pre>&lt;div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a"&gt;
+&lt;p&gt;Hi Priya Sharma,&lt;/p&gt;
+&lt;p&gt;Since you had a look, the easiest next step is a quick 15-minute call.&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none"&gt;Book a 15-minute call&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Or reply with two times that work and I'll set it up.&lt;/p&gt;
+&lt;p&gt;Tejes Pujara&lt;br&gt;Founder, DeepEcom&lt;/p&gt;
+&lt;p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px"&gt;You are receiving this because you are in our B2B list. &lt;a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a"&gt;Unsubscribe&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;</pre>
+    </details>
+  </article>
+  <article class="card" id="C_2">
+    <div class="card-head">
+      <div>
+        <span class="step">C_2</span>
+        <h3>C_2 - Clicked, tailor the demo</h3>
+      </div>
+      <span class="delay">+2 days after previous</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Subject</span>
+      <span class="value">Anything I can answer first?</span>
+    </div>
+    
+
+    <div class="preview-wrap">
+      <div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="preview-title">Rendered preview</span></div>
+      <div class="preview-body"><div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a">
+<p>Hi Priya Sharma,</p>
+<p>Happy to tailor the demo to your channels - Amazon, Flipkart, Meesho, Tally or Zoho.</p>
+<p>Reply with your questions, or grab a time here.</p>
+<p><a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none">Book a free demo</a></p>
+<p>Tejes Pujara<br>Founder, DeepEcom</p>
+<p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px">You are receiving this because you are in our B2B list. <a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a">Unsubscribe</a></p>
+</div></div>
+    </div>
+
+    <details>
+      <summary>Plain text</summary>
+      <pre>Hi Priya Sharma,
+
+Happy to tailor the demo to your channels - Amazon, Flipkart, Meesho, Tally or Zoho.
+
+Reply with your questions, or grab a time here.
+
+Book a free demo: https://deepecom.example.com/demo
+
+Tejes Pujara
+Founder, DeepEcom
+
+You are receiving this because you are in our B2B list.
+Unsubscribe: https://deepecom.example.com/unsubscribe</pre>
+    </details>
+    <details>
+      <summary>HTML source</summary>
+      <pre>&lt;div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a"&gt;
+&lt;p&gt;Hi Priya Sharma,&lt;/p&gt;
+&lt;p&gt;Happy to tailor the demo to your channels - Amazon, Flipkart, Meesho, Tally or Zoho.&lt;/p&gt;
+&lt;p&gt;Reply with your questions, or grab a time here.&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none"&gt;Book a free demo&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Tejes Pujara&lt;br&gt;Founder, DeepEcom&lt;/p&gt;
+&lt;p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px"&gt;You are receiving this because you are in our B2B list. &lt;a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a"&gt;Unsubscribe&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;</pre>
+    </details>
+  </article>
+  <article class="card" id="C_3">
+    <div class="card-head">
+      <div>
+        <span class="step">C_3</span>
+        <h3>C_3 - Clicked, last note</h3>
+      </div>
+      <span class="delay">+3 days after previous</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Subject</span>
+      <span class="value">Last note from me</span>
+    </div>
+    
+
+    <div class="preview-wrap">
+      <div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="preview-title">Rendered preview</span></div>
+      <div class="preview-body"><div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a">
+<p>Hi Priya Sharma,</p>
+<p>I'll close the loop from my side. Book whenever works for you.</p>
+<p><a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none">Book a free demo</a></p>
+<p>Wishing you a great quarter.</p>
+<p>Tejes Pujara<br>Founder, DeepEcom</p>
+<p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px">You are receiving this because you are in our B2B list. <a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a">Unsubscribe</a></p>
+</div></div>
+    </div>
+
+    <details>
+      <summary>Plain text</summary>
+      <pre>Hi Priya Sharma,
+
+I'll close the loop from my side. Book whenever works for you.
+
+Book a free demo: https://deepecom.example.com/demo
+
+Wishing you a great quarter.
+
+Tejes Pujara
+Founder, DeepEcom
+
+You are receiving this because you are in our B2B list.
+Unsubscribe: https://deepecom.example.com/unsubscribe</pre>
+    </details>
+    <details>
+      <summary>HTML source</summary>
+      <pre>&lt;div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a"&gt;
+&lt;p&gt;Hi Priya Sharma,&lt;/p&gt;
+&lt;p&gt;I'll close the loop from my side. Book whenever works for you.&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://deepecom.example.com/demo" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none"&gt;Book a free demo&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Wishing you a great quarter.&lt;/p&gt;
+&lt;p&gt;Tejes Pujara&lt;br&gt;Founder, DeepEcom&lt;/p&gt;
+&lt;p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px"&gt;You are receiving this because you are in our B2B list. &lt;a href="https://deepecom.example.com/unsubscribe" style="color:#8a8a8a"&gt;Unsubscribe&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;</pre>
+    </details>
+  </article>
+  </section>
+  </main>
+</div>
+<footer>Generated from <code>packages/db/src/email-templates.ts</code> · regenerate with <code>bun run docs:email-templates</code></footer>
+</body>
+</html>
