@@ -263,7 +263,7 @@ Unsubscribe: {{unsubscribe_url}}
 
 ## O_1 — O_1 - Opened, short version
 
-**Subject:** The 2-minute version
+**Subject:** The short version
 
 **Plain text**
 
@@ -272,11 +272,9 @@ Hi {{first_name}},
 
 Here's the short version of what I mentioned - most teams see results within the first month.
 
-Full breakdown:
+Book a free demo: {{demo_link}}
 
-See the 2-minute overview: {{demo_link}}
-
-Want a live walkthrough instead? Just reply and I'll set it up.
+Or just reply and I'll set up a live walkthrough.
 
 {{sender_name}}
 {{sender_title}}, DeepEcom
@@ -291,9 +289,8 @@ Unsubscribe: {{unsubscribe_url}}
 <div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a">
 <p>Hi {{first_name}},</p>
 <p>Here's the short version of what I mentioned - most teams see results within the first month.</p>
-<p>Full breakdown:</p>
-<p><a href="{{demo_link}}" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none">See the 2-minute overview</a></p>
-<p>Want a live walkthrough instead? Just reply and I'll set it up.</p>
+<p><a href="{{demo_link}}" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none">Book a free demo</a></p>
+<p>Or just reply and I'll set up a live walkthrough.</p>
 <p>{{sender_name}}<br>{{sender_title}}, DeepEcom</p>
 <p style="font-size:12px;color:#8a8a8a;border-top:1px solid #e5e5e5;padding-top:12px">You are receiving this because you are in our B2B list. <a href="{{unsubscribe_url}}" style="color:#8a8a8a">Unsubscribe</a></p>
 </div>

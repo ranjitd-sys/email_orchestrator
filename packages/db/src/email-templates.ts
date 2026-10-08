@@ -172,14 +172,13 @@ export const EMAIL_TEMPLATES: readonly StepEmailTemplate[] = [
   {
     code: "O_1",
     name: "O_1 - Opened, short version",
-    subject: "The 2-minute version",
+    subject: "The short version",
     subjectAlternates: [],
     blocks: [
       GREETING,
       { p: "Here's the short version of what I mentioned - most teams see results within the first month." },
-      { p: "Full breakdown:" },
-      { cta: "See the 2-minute overview" },
-      { p: "Want a live walkthrough instead? Just reply and I'll set it up." },
+      { cta: "Book a free demo" },
+      { p: "Or just reply and I'll set up a live walkthrough." },
     ],
   },
   {
