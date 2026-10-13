@@ -27,7 +27,7 @@ jobs:
       security-events: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Bun runtime
         uses: ./.github/actions/setup
@@ -64,7 +64,7 @@ jobs:
 
       - name: Summarize CodeQL results
         if: always()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           SECURITY_TAB: ${{ github.server_url }}/${{ github.repository }}/security
           SCAN_START: ${{ steps.codeql-start.outputs.time }}
@@ -125,7 +125,7 @@ jobs:
 
       - name: Summarize Dependabot results
         if: always()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           SECURITY_TAB: ${{ github.server_url }}/${{ github.repository }}/security
         with:
