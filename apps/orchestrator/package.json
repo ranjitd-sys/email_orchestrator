@@ -12,11 +12,11 @@
     "deploy": "echo 'orchestrator deploys to your Bun host (systemd/PM2/Docker)' && exit 1"
   },
   "dependencies": {
-    "@effect/platform-node": "^4.0.0",
-    "@effect/sql-pg": "^4.0.0",
+    "@effect/platform-node": "^4.0.3",
+    "@effect/sql-pg": "^4.0.3",
     "@email/db": "workspace:*",
     "@email/shared": "workspace:*",
-    "effect": "^4.0.0",
+    "effect": "^4.0.2",
     "xstate": "^5.33.2"
   }
 }
