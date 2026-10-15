@@ -63,6 +63,7 @@ jobs:
           category: /language:javascript-typescript
 
       - name: Summarize CodeQL results
+        id: codeql-summary
         if: always()
         uses: actions/github-script@v8
         env:
@@ -72,6 +73,8 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const securityTab = process.env.SECURITY_TAB;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const runNumber = context.runNumber;
             const start = Number(new Date(process.env.SCAN_START));
             const elapsed = Number.isFinite(start) ? Math.max(0, Math.round((Date.now() - start) / 1000)) : 0;
 
@@ -109,7 +112,9 @@ jobs:
 
             const summary = core.summary
               .addHeading(`\u{1F6E1}\uFE0F SAST (CodeQL) Analysis`, 3)
-              .addRaw(`\u2705 Completed ${finished} (${duration})\n\n`);
+              .addRaw(`\u2705 **Analysis Date/Time (UTC):** ${finished}\n`)
+              .addRaw(`**Duration:** ${duration}\n`)
+              .addRaw(`**Workflow Run:** [#${runNumber}](${runUrl})\n\n`);
 
             if (note) {
               summary.addRaw(`${note}\n\n`);
@@ -122,8 +127,10 @@ jobs:
             await summary
               .addRaw(`[View results \u2192](${securityTab}/code-scanning)\n`)
               .write();
+            core.setOutput("analysis_time", finished);
 
       - name: Summarize Dependabot results
+        id: dependabot-summary
         if: always()
         uses: actions/github-script@v8
         env:
@@ -133,6 +140,8 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const securityTab = process.env.SECURITY_TAB;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const runNumber = context.runNumber;
             const started = Date.now();
 
             let open = null;
@@ -169,8 +178,10 @@ jobs:
             console.log(`View results: ${securityTab}/dependabot`);
 
             const summary = core.summary
-              .addHeading(`\u{1F4E6} SCA (Dependabot) Dependency Scan`, 3)
-              .addRaw(`\u2705 Completed ${finished} (${duration})\n\n`);
+              .addHeading(`\u{1F4E6} SCA/OSS (Dependabot) Dependency Scan`, 3)
+              .addRaw(`\u2705 **Analysis Date/Time (UTC):** ${finished}\n`)
+              .addRaw(`**Duration:** ${duration}\n`)
+              .addRaw(`**Workflow Run:** [#${runNumber}](${runUrl})\n\n`);
 
             if (note) {
               summary.addRaw(`${note}\n\n`);
@@ -180,4 +191,34 @@ jobs:
 
             await summary
               .addRaw(`[View results \u2192](${securityTab}/dependabot)\n`)
+              .write();
+            core.setOutput("analysis_time", finished);
+
+      - name: Security Analysis Evidence
+        if: always()
+        uses: actions/github-script@v8
+        env:
+          CODEQL_TIME: ${{ steps.codeql-summary.outputs.analysis_time }}
+          DEPENDABOT_TIME: ${{ steps.dependabot-summary.outputs.analysis_time }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const runNumber = context.runNumber;
+            const codeqlTime = process.env.CODEQL_TIME || "not run";
+            const dependabotTime = process.env.DEPENDABOT_TIME || "not run";
+            const generated = new Date().toISOString().slice(0, 19).replace("T", " ") + " UTC";
+            await core.summary
+              .addHeading(`\u{1F512} Security Analysis Evidence`, 2)
+              .addRaw(`**Workflow Run:** [#${runNumber}](${runUrl})  \u00B7  **Generated (UTC):** ${generated}\n\n`)
+              .addTable([
+                [
+                  { data: "**Scan Type**", header: true },
+                  { data: "**Analysis Date/Time (UTC)**", header: true },
+                  { data: "**Workflow Run**", header: true },
+                ],
+                ["SAST (CodeQL)", codeqlTime, `#${runNumber}`],
+                ["SCA/OSS (Dependabot)", dependabotTime, `#${runNumber}`],
+              ])
+              .addRaw(`\n_Absolute timestamps of the security analyses performed in this workflow run, for SAST (CodeQL) and SCA/OSS (Dependabot)._`)
               .write();
