@@ -121,6 +121,9 @@ jobs:
               echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "${GHCR_USER:?GHCR_USER required}" --password-stdin
             fi
 
+            echo "==> Stopping any existing stack (frees 80/443)"
+            $COMPOSE down --remove-orphans || true
+
             $COMPOSE pull
             $COMPOSE run --rm --no-deps orchestrator bun run packages/db/src/migrate.ts
             $COMPOSE up -d --remove-orphans

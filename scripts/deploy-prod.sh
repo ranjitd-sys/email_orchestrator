@@ -40,6 +40,9 @@ else
   echo "==> Skipping GHCR login (set GHCR_PULL_TOKEN if the image is private)"
 fi
 
+echo "==> Stopping any existing stack (frees 80/443)"
+$COMPOSE down --remove-orphans || true
+
 echo "==> Pulling image ghcr.io/ranjitd-sys/email_orchestrator:${IMAGE_TAG}"
 $COMPOSE pull
 
