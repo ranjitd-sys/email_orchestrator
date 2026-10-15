@@ -161,6 +161,49 @@ bun run destroy   # tear down
 `bun run deploy` prints the account id and queue id; copy them into
 `.env` for the orchestrator.
 
+## Deployment (VPS + Docker + Caddy)
+
+The orchestrator ships as a Bun container (`Dockerfile`) fronted by Caddy for
+automatic HTTPS. Production topology is in `docker-compose.prod.yml`
+(`orchestrator` + `caddy`); it uses your existing Postgres via `DATABASE_URL`
+and does **not** start a database container. Caddy terminates TLS for
+`event.deepecom.shop` and reverse-proxies to the orchestrator on port 3000.
+
+### Brevo webhook endpoint
+
+The server exposes `POST /webhooks/brevo/<BREVO_WEBHOOK_SECRET>` for Brevo
+**outbound (transactional)** events (delivered / opened / click / bounce /
+spam / unsubscribed). The path secret must equal `BREVO_WEBHOOK_SECRET` in the
+container env. Configure the Brevo webhook URL as:
+
+```
+https://event.deepecom.shop/webhooks/brevo/<your BREVO_WEBHOOK_SECRET>
+```
+
+The endpoint validates the secret, accepts a single object or a batched array,
+logs each event with its correlation `tags`, and returns `200` fast. (Persisting
+to `email_events` and driving the engagement state machine is the next phase.)
+
+### First deploy (manual, on the VPS)
+
+```bash
+# One-time on the server: install Docker, clone the repo to /srv/email,
+# then create /srv/email/.env with production values:
+#   DATABASE_URL=...   BREVO_WEBHOOK_SECRET=...   PORT=3000
+# Point the DNS A record for event.deepecom.shop at this host, then:
+cd /srv/email && git pull && bash scripts/deploy-prod.sh
+
+# Verify:
+curl https://event.deepecom.shop/health
+```
+
+### CI/CD
+
+`.github/workflows/deploy.yml` gates on the Bun checks, then SSHes to the VPS
+to `git pull` + run `scripts/deploy-prod.sh`, and finishes with a live health
+check. Required `production` environment secrets: `DEPLOY_SSH_HOST`,
+`DEPLOY_SSH_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH`.
+
 ## Environment
 
 See `.env.example`. The key ones:

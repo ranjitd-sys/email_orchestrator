@@ -1,0 +1,33 @@
+# Dependencies (reinstalled inside the image)
+**/node_modules
+
+# Git + CI
+.git
+.github
+
+# Secrets — never bake into the image
+.env
+.env.*
+!.env.example
+
+# Local tooling state
+.wrangler
+.alchemy
+.dev.vars
+
+# Docs, tests, temp artifacts
+tests
+docs
+scripts
+/tmp
+*.md
+!apps/**/README.md
+
+# Docker files themselves
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Editor/OS cruft
+.idea
+.DS_Store

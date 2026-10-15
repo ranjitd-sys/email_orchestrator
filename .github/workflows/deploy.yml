@@ -1,0 +1,75 @@
+name: Deploy
+
+# Deploys the orchestrator to the production VPS after CI passes.
+# Uses the same scripts/deploy-prod.sh run manually (SSH -> git pull -> build/up).
+#
+# Required repo secrets (Settings -> Environments -> production):
+#   DEPLOY_SSH_HOST   VPS IP or hostname
+#   DEPLOY_SSH_USER   ssh user (e.g. deploy)
+#   DEPLOY_SSH_KEY    private key (PEM) whose public half is in authorized_keys
+#   DEPLOY_PATH       repo checkout path on the VPS (default: /srv/email)
+#
+# Optional (only if you switch to a registry-pull model instead of build-on-VPS):
+#   GITHUB_TOKEN has packages:write for GHCR push (see alternative job commented below)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Only one production deploy at a time; don't cancel mid-deploy.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci-gate:
+    name: CI gate (typecheck + tests + lint)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+      - run: bun run typecheck
+      - run: bun run --cwd apps/orchestrator typecheck
+      - run: bun run test:runtime
+      - run: bun run lint
+
+  deploy:
+    name: Deploy to VPS
+    needs: ci-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - name: SSH deploy (git pull + build + migrate + up)
+        uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: DEPLOY_PATH
+          script: |
+            set -euo pipefail
+            APP_DIR="${DEPLOY_PATH:-/srv/email}"
+            cd "$APP_DIR"
+            git fetch --all --prune
+            git checkout main
+            git pull --ff-only origin main
+            bash scripts/deploy-prod.sh
+
+      - name: Post-deploy health check
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            curl -fsS --retry 5 --retry-delay 2 --retry-all-errors \
+              https://event.deepecom.shop/health && echo

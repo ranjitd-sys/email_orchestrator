@@ -36,6 +36,31 @@ async function main() {
         }
         return Response.json({ ok: true, service: "orchestrator" });
       }
+      const webhookPrefix = "/webhooks/brevo/";
+      if (req.method === "POST" && url.pathname.startsWith(webhookPrefix)) {
+        const secret = url.pathname.slice(webhookPrefix.length);
+        const expected = process.env.BREVO_WEBHOOK_SECRET;
+        if (!expected || secret !== expected) {
+          return new Response("not found", { status: 404 });
+        }
+        let body: unknown;
+        try {
+          body = await req.json();
+        } catch {
+          return Response.json({ ok: false, error: "invalid json" }, { status: 400 });
+        }
+        const events = Array.isArray(body) ? body : [body];
+        for (const event of events) {
+          const record = event as Record<string, unknown>;
+          console.log("[brevo-webhook] received", {
+            event: record.event,
+            email: record.email,
+            messageId: record["message-id"],
+            tags: record.tags ?? record.tag,
+          });
+        }
+        return Response.json({ ok: true, received: events.length });
+      }
       return new Response("email-orchestrator", { status: 200 });
     },
   });
