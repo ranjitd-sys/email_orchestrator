@@ -12,6 +12,7 @@ export class TransientSendError extends SendError {
   }
 }
 
+
 export class PermanentSendError extends SendError {
   constructor(message: string, options?: { cause?: unknown }) {
     super(message, options);

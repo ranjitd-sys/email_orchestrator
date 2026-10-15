@@ -60,13 +60,13 @@ export const seedProgram = Effect.gen(function* () {
   `;
   yield* sql`
     insert into domains (id, dataset_id, domain, status, daily_limit)
-    values (${DOM}, ${D}, 'demo.example.com', 'ACTIVE', 100)
-    on conflict do nothing
+    values (${DOM}, ${D}, 'email.deepecom.shop', 'ACTIVE', 100)
+    on conflict (id) do update set domain = excluded.domain
   `;
   yield* sql`
     insert into mailboxes (id, domain_id, email, display_name, status, daily_limit)
-    values (${MB}, ${DOM}, 'sender@demo.example.com', 'Demo Sender', 'ACTIVE', 100)
-    on conflict do nothing
+    values (${MB}, ${DOM}, 'hello@email.deepecom.shop', 'DeepEcom', 'ACTIVE', 100)
+    on conflict (id) do update set email = excluded.email, display_name = excluded.display_name
   `;
 
   for (const s of steps) {

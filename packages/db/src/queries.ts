@@ -47,6 +47,7 @@ export interface SendAttemptInput {
   templateId: string | null;
   domainId: string | null;
   mailboxId: string | null;
+  provider?: string;
 }
 
 export const loadDueActions = (now: Date) =>
@@ -193,7 +194,7 @@ export const insertSendAttempt = (input: SendAttemptInput) =>
         (${input.id}, ${input.actionId}, ${input.datasetId}, ${input.leadId},
          ${input.campaignId}, ${input.sequenceId}, ${input.stepId},
          ${input.templateId}, ${input.domainId}, ${input.mailboxId},
-         1, 'resend', 'REQUESTED', now())
+          1, ${input.provider ?? 'brevo'}, 'REQUESTED', now())
     `;
   });
 
@@ -202,6 +203,8 @@ export const createFirstStep = (args: {
   datasetId: string;
   campaignId: string;
   sequenceType: string;
+  domainId?: string | null;
+  mailboxId?: string | null;
 }) =>
   Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient;
@@ -218,13 +221,29 @@ export const createFirstStep = (args: {
     const step = steps[0];
     if (!step) return null;
     const id = crypto.randomUUID();
+    const existing = yield* sql<{ id: string }>`
+      select sa.id
+      from scheduled_actions sa
+      where sa.lead_id = ${args.leadId}
+        and sa.sequence_id = ${sequence.id}
+        and sa.action_status in ('SCHEDULED', 'QUEUED')
+      limit 1
+    `;
+    if (existing.length > 0) {
+      const ex = existing[0];
+      if (ex && ex.id) {
+        return { actionId: ex.id, stepId: step.id };
+      }
+    }
     yield* sql`
       insert into scheduled_actions
         (id, dataset_id, lead_id, campaign_id, sequence_id, step_id,
-         template_id, action_status, execute_at)
+         template_id, domain_id, mailbox_id, action_status, execute_at)
       values
         (${id}, ${args.datasetId}, ${args.leadId}, ${args.campaignId},
-         ${sequence.id}, ${step.id}, ${step.template_id}, 'SCHEDULED', now())
+         ${sequence.id}, ${step.id}, ${step.template_id},
+         ${args.domainId ?? null}, ${args.mailboxId ?? null},
+         'SCHEDULED', now())
       on conflict do nothing
     `;
     yield* sql`

@@ -25,6 +25,7 @@
     "db:seed": "bun run packages/db/src/seed.ts",
     "docs:email-templates": "bun run scripts/gen-email-templates.ts && bun run scripts/gen-email-templates-html.ts && python3 scripts/md2docx.py docs/EMAIL_TEMPLATES.md /tmp/email-templates.html && soffice --headless --convert-to docx:\"MS Word 2007 XML\" --outdir /tmp /tmp/email-templates.html && mv /tmp/email-templates.docx docs/email-templates.docx",
     "scheduler:tick": "bun run apps/orchestrator/src/domain/run.ts",
+    "ingest:contacts": "bun run packages/db/src/ingest.ts",
     "db:psql": "docker exec -it email-pg psql -U email -d email_orchestrator",
     "worker:plan": "bun run --cwd apps/worker plan",
     "worker:deploy": "bun run --cwd apps/worker deploy",

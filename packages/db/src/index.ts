@@ -9,3 +9,4 @@ export { runMigrations } from "./migrate.ts";
 export * from "./queries.ts";
 export * from "./seed.ts";
 export * from "./email-templates.ts";
+export * from "./ingest.ts";
