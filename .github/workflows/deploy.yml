@@ -88,17 +88,7 @@ jobs:
           target: /srv/email
           overwrite: true
 
-      - name: Ship deploy script to VPS
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.DEPLOY_SSH_HOST }}
-          username: ${{ secrets.DEPLOY_SSH_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: "scripts/deploy-prod.sh"
-          target: /srv/email/scripts
-          overwrite: true
-
-      - name: Write .env from secrets + deploy
+      - name: Write .env from secrets + deploy (pull from GHCR)
         uses: appleboy/ssh-action@v1
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -123,7 +113,26 @@ jobs:
               echo "PORT=3000"
             } > .env
             chmod 600 .env
-            bash scripts/deploy-prod.sh
+
+            export IMAGE_TAG="${IMAGE_TAG:-latest}"
+            COMPOSE="docker compose -f docker-compose.prod.yml"
+
+            if [ -n "${GHCR_PULL_TOKEN:-}" ]; then
+              echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "${GHCR_USER:?GHCR_USER required}" --password-stdin
+            fi
+
+            $COMPOSE pull
+            $COMPOSE run --rm --no-deps orchestrator bun run packages/db/src/migrate.ts
+            $COMPOSE up -d --remove-orphans
+
+            status=""
+            for _ in $(seq 1 40); do
+              status="$($COMPOSE ps --format '{{.Name}} {{.Health}}' 2>/dev/null | awk '/orchestrator/{print $2}')"
+              [ "$status" = "healthy" ] && break
+              sleep 2
+            done
+            echo "orchestrator: ${status:-unknown}"
+            docker image prune -f >/dev/null 2>&1 || true
 
       - name: Live health check
         uses: appleboy/ssh-action@v1
