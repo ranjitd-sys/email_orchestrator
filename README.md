@@ -5,21 +5,38 @@
 Two-part email orchestration system implementing the spec in
 `docs/Email_Orchestrator_Final_State_Machine_Developer_Spec.md`.
 
+For a diagram-first, module-by-module reference, see **[`ARCHITECTURE.md`](ARCHITECTURE.md)**.
+For a plain-English walkthrough, see [`docs/WHAT_WE_BUILT.md`](docs/WHAT_WE_BUILT.md).
+
+```mermaid
+flowchart LR
+  Contacts[("crawler_prod<br/>contacts")] -->|"EMAIL, last 7d"| Ingest["ingest:contacts"]
+  Ingest --> DB[("Postgres")]
+  DB --> Tick["scheduler:tick"]
+  Tick -->|"SendPayload"| Queue[["Cloudflare Queue"]]
+  Queue --> Worker["Email Worker"]
+  Worker --> Provider["Brevo / Resend"]
+```
+
 ## Layout
 
 ```
 packages/shared     # enums + contract types (used by both apps)
-packages/db         # migrations, schema, queries (orchestrator only)
-apps/orchestrator   # Bun process: webhooks, state machine, scheduler, queue producer
+packages/db         # migrations, schema, queries, contact ingest, templates
+apps/orchestrator   # Bun process: state machine, scheduler, queue producer
 apps/worker         # Cloudflare Worker: stateless email sender, queue consumer
+scripts/            # doc, diagram-adjacent, and task-tracker generators
 docs/               # spec, build plan, task tracker
 ```
 
 The split follows spec §11: the orchestrator owns business state and never calls an
 email provider; the worker only executes sends and never chooses a sequence. They
-talk through Cloudflare Queues only — there is no internal API and no Worker → 
-orchestrator callback. The orchestrator publishes the full `SendPayload` and
-correlates provider webhooks back to a send attempt through payload tags.
+talk through Cloudflare Queues only — there is no internal API and no Worker →
+orchestrator callback. The orchestrator publishes the full `SendPayload`.
+
+> [!NOTE]
+> Provider webhooks (delivery / open / click) and the endpoint that correlates them back
+> to a send attempt are **not built yet**; see [`ARCHITECTURE.md`](ARCHITECTURE.md#known-gaps-and-roadmap).
 
 ## Setup
 
@@ -44,6 +61,33 @@ bun run db:reset       # wipe the volume and start fresh
 bun run db:down        # stop the container
 ```
 
+## Data ingestion
+
+Contacts are pulled from a **separate** Postgres database (`crawler_prod`) via
+`EMAIL_DATABASE_URL`. `bun run ingest:contacts`:
+
+- reads contacts where `upper(type) = 'EMAIL'`, created within the **last 7 days**, with a
+  light `~ '@'` sanity check;
+- upserts them into `leads` on `(dataset_id, lower(email))` (idempotent — re-running never
+  duplicates a lead);
+- skips suppressed addresses (`leads.suppressed_at` / `suppression_list`);
+- schedules the first `NOT_OPENED` step for each newly inserted lead, attaching the
+  configured sender (`domains` / `mailboxes`).
+
+```bash
+bun run ingest:contacts        # crawler_prod -> leads + NO_1 actions
+bun run scheduler:tick         # due actions -> queue -> worker -> provider
+```
+
+Run both together as the daily loop:
+
+```bash
+bun run ingest:contacts && bun run scheduler:tick
+```
+
+See [`ARCHITECTURE.md`](ARCHITECTURE.md#ingestion-crawler-contacts-to-leads) for the full
+sequence.
+
 ## Commands
 
 | Command | Purpose |
@@ -53,7 +97,11 @@ bun run db:down        # stop the container
 | `bun run test` | Run tests |
 | `bun run test:runtime` | Run the Bun-runtime tests only (what CI runs) |
 | `bun run lint` | Lint the Bun-runtime sources with Biome |
+| `bun run ingest:contacts` | Sync `crawler_prod` contacts into leads + schedule NO_1 |
+| `bun run scheduler:tick` | One scheduler pass: due actions → queue → worker |
 | `bun run dev:orchestrator` | Start the orchestrator on :3000 |
+| `bun run db:up` / `db:migrate` / `db:seed` / `db:psql` / `db:reset` | Local database lifecycle |
+| `bun run worker:deploy` / `worker:plan` / `worker:dev` | Cloudflare Worker via Alchemy |
 
 ## Continuous integration
 
@@ -118,21 +166,35 @@ bun run destroy   # tear down
 See `.env.example`. The key ones:
 
 - `DATABASE_URL` — hosted Postgres (source of truth)
+- `EMAIL_DATABASE_URL` — crawler contacts Postgres used by `ingest:contacts`
 - `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_QUEUE_ID`, `CLOUDFLARE_API_TOKEN` — the
   orchestrator pushes send jobs to the queue over HTTP; the token needs the
   `Queues Edit` permission
 - `EMAIL_PROVIDER`, `RESEND_API_KEY`, `BREVO_API_KEY` — set on the Worker through
   Alchemy env, not read by the orchestrator
 
-## State machine
+> [!IMPORTANT]
+> Without the Cloudflare queue trio the orchestrator falls back to an in-memory
+> `LocalQueue`, which does not survive the one-shot scheduler process exiting.
 
-Lead engagement lives in one XState v5 machine
-(`apps/orchestrator/src/domain/transition.ts`) covering `NEW`, `NOT_OPENED`,
-`OPENED`, `CLICKED`, `REPLIED` and `SUPPRESSED`. Transitions emit an ordered
-action list (`CREATE_SEQUENCE`, `CANCEL_REMAINING`, `CANCEL_ALL_FUTURE`,
-`SUPPRESS`, `RECORD_ONLY`) that the event processor applies in one transaction.
-Event precedence (suppression → replied → clicked → opened) lives in
-`apps/orchestrator/src/domain/precedence.ts`.
+## State machines
+
+There are **two** machines, both in `apps/orchestrator/src/domain/`:
+
+- `orchestrator-machine.ts` — the scheduler flow `PULLED → DECIDED → SENT` (with
+  `cancelled` / `failed` finals). `pipeline.ts` drives it while executing actor Effects
+  inside a single `withTransaction`, so the flow and the database share one fiber.
+- `transition.ts` — the pure lead-engagement machine covering `NEW`, `NOT_OPENED`,
+  `OPENED`, `CLICKED`, `REPLIED`, `SUPPRESSED`. It returns the next position plus an
+  ordered action list (`CREATE_SEQUENCE`, `CREATE_STEP`, `CANCEL_REMAINING`,
+  `CANCEL_ALL_FUTURE`, `COMPLETE_SEQUENCE`, `SUPPRESS`, `RECORD_ONLY`) and never touches
+  the database.
+
+Actors (`actors.ts`) convert a pulled action into a `SendPayload` and persist the next
+step, resolved most-specific-first: step actor → state actor → `defaultActor`. Event
+precedence (suppression → replied → clicked → opened) lives in `precedence.ts`.
+
+See [`ARCHITECTURE.md`](ARCHITECTURE.md#scheduler-flow-pulled-to-sent).
 
 ## Progress
 
