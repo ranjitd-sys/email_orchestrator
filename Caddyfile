@@ -1,4 +1,0 @@
-event.deepecom.shop {
-	encode gzip
-	reverse_proxy orchestrator:3000
-}

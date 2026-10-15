@@ -7,7 +7,8 @@
 #
 # Prereqs on the VPS:
 #   - Docker + docker compose installed
-#   - /srv/email/docker-compose.prod.yml + Caddyfile (shipped by CI via scp)
+#   - Host Caddy reverse-proxying event.deepecom.shop -> 127.0.0.1:3000 (TLS there)
+#   - /srv/email/docker-compose.prod.yml (shipped by CI via scp)
 #   - /srv/email/.env with: DATABASE_URL, BREVO_WEBHOOK_SECRET, PORT=3000
 #
 # Env (supplied by CI via ssh-action `envs:` or exported manually):
@@ -40,7 +41,7 @@ else
   echo "==> Skipping GHCR login (set GHCR_PULL_TOKEN if the image is private)"
 fi
 
-echo "==> Stopping any existing stack (frees 80/443)"
+echo "==> Stopping any existing orchestrator (kill old before new)"
 $COMPOSE down --remove-orphans || true
 
 echo "==> Pulling image ghcr.io/ranjitd-sys/email_orchestrator:${IMAGE_TAG}"
@@ -49,7 +50,7 @@ $COMPOSE pull
 echo "==> Running database migrations"
 $COMPOSE run --rm --no-deps orchestrator bun run packages/db/src/migrate.ts
 
-echo "==> Starting services (orchestrator + caddy)"
+echo "==> Starting orchestrator"
 $COMPOSE up -d --remove-orphans
 
 echo "==> Waiting for orchestrator health"

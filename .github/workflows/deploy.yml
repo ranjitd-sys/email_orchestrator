@@ -84,7 +84,7 @@ jobs:
           host: ${{ secrets.DEPLOY_SSH_HOST }}
           username: ${{ secrets.DEPLOY_SSH_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: "docker-compose.prod.yml,Caddyfile"
+          source: "docker-compose.prod.yml"
           target: /srv/email
           overwrite: true
 
@@ -121,7 +121,7 @@ jobs:
               echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "${GHCR_USER:?GHCR_USER required}" --password-stdin
             fi
 
-            echo "==> Stopping any existing stack (frees 80/443)"
+            echo "==> Stopping any existing orchestrator (kill old before new)"
             $COMPOSE down --remove-orphans || true
 
             $COMPOSE pull

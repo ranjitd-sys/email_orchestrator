@@ -161,13 +161,14 @@ bun run destroy   # tear down
 `bun run deploy` prints the account id and queue id; copy them into
 `.env` for the orchestrator.
 
-## Deployment (VPS + Docker + Caddy)
+## Deployment (VPS + Docker + host Caddy)
 
-The orchestrator ships as a Bun container (`Dockerfile`) fronted by Caddy for
-automatic HTTPS. Production topology is in `docker-compose.prod.yml`
-(`orchestrator` + `caddy`); it uses your existing Postgres via `DATABASE_URL`
-and does **not** start a database container. Caddy terminates TLS for
-`event.deepecom.shop` and reverse-proxies to the orchestrator on port 3000.
+The orchestrator ships as a Bun container (`Dockerfile`). TLS and routing are
+handled by **Caddy already running on the VPS host** — the compose stack runs the
+**orchestrator only** and publishes it on `127.0.0.1:3000` for the host Caddy to
+reverse-proxy (`event.deepecom.shop` → `127.0.0.1:3000`). Nothing in Docker binds
+80/443, so it never conflicts with your host Caddy. It uses your existing Postgres
+via `DATABASE_URL` and does not start a database container.
 
 ### Brevo webhook endpoint
 
@@ -198,7 +199,7 @@ rollback is a redeploy of an older tag.
 
 1. `ci-gate` — typecheck + tests + lint.
 2. `build-and-push` — build the Dockerfile and push `:<sha>` + `:latest` to GHCR.
-3. `deploy` — SSH to the VPS, ship `docker-compose.prod.yml` + `Caddyfile` +
+3. `deploy` — SSH to the VPS, ship `docker-compose.prod.yml` +
    `scripts/deploy-prod.sh`, write `/srv/email/.env` from secrets, `docker login`
    GHCR, `docker compose pull`, run migrations, `up -d`, then curl `/health`.
 
@@ -209,9 +210,10 @@ Required `production` environment secrets: `DEPLOY_SSH_HOST` (bare VPS IPv4),
 
 ### First deploy
 
-Just merge to `main` (the workflow provisions `.env` + infra files and pulls the
-image). Before that, the VPS needs Docker installed and the DNS A record
-`event.deepecom.shop` → VPS IP (Caddy auto-issues TLS on port 80/443). To verify:
+Just merge to `main` (the workflow provisions `.env` + the compose file and pulls
+the image). Before that, the VPS needs Docker installed, a working **host Caddy**
+reverse-proxying `event.deepecom.shop` → `127.0.0.1:3000`, and the DNS A record
+`event.deepecom.shop` → VPS IP. To verify:
 
 ```bash
 curl https://event.deepecom.shop/health
