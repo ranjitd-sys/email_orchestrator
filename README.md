@@ -184,25 +184,38 @@ The endpoint validates the secret, accepts a single object or a batched array,
 logs each event with its correlation `tags`, and returns `200` fast. (Persisting
 to `email_events` and driving the engagement state machine is the next phase.)
 
-### First deploy (manual, on the VPS)
+### How deploys work (GHCR)
 
-```bash
-# One-time on the server: install Docker, clone the repo to /srv/email,
-# then create /srv/email/.env with production values:
-#   DATABASE_URL=...   BREVO_WEBHOOK_SECRET=...   PORT=3000
-# Point the DNS A record for event.deepecom.shop at this host, then:
-cd /srv/email && git pull && bash scripts/deploy-prod.sh
-
-# Verify:
-curl https://event.deepecom.shop/health
-```
+The image is **built in CI and pushed to GHCR**
+(`ghcr.io/ranjitd-sys/email_orchestrator`); the VPS only **pulls** it — it needs
+Docker and nothing else (no git, no source, no build). `docker-compose.prod.yml`
+references the image by `IMAGE_TAG` (the git sha) so each deploy is traceable and
+rollback is a redeploy of an older tag.
 
 ### CI/CD
 
-`.github/workflows/deploy.yml` gates on the Bun checks, then SSHes to the VPS
-to `git pull` + run `scripts/deploy-prod.sh`, and finishes with a live health
-check. Required `production` environment secrets: `DEPLOY_SSH_HOST`,
-`DEPLOY_SSH_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH`.
+`.github/workflows/deploy.yml`:
+
+1. `ci-gate` — typecheck + tests + lint.
+2. `build-and-push` — build the Dockerfile and push `:<sha>` + `:latest` to GHCR.
+3. `deploy` — SSH to the VPS, ship `docker-compose.prod.yml` + `Caddyfile` +
+   `scripts/deploy-prod.sh`, write `/srv/email/.env` from secrets, `docker login`
+   GHCR, `docker compose pull`, run migrations, `up -d`, then curl `/health`.
+
+Required `production` environment secrets: `DEPLOY_SSH_HOST` (bare VPS IPv4),
+`DEPLOY_SSH_USER`, `DEPLOY_SSH_KEY` (passphrase-less private PEM),
+`DATABASE_URL`, `BREVO_WEBHOOK_SECRET`, `GHCR_USER`, and `GHCR_PULL_TOKEN`
+(a PAT with `read:packages`; omit only if the GHCR package is made public).
+
+### First deploy
+
+Just merge to `main` (the workflow provisions `.env` + infra files and pulls the
+image). Before that, the VPS needs Docker installed and the DNS A record
+`event.deepecom.shop` → VPS IP (Caddy auto-issues TLS on port 80/443). To verify:
+
+```bash
+curl https://event.deepecom.shop/health
+```
 
 ## Environment
 

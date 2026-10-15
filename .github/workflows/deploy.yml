@@ -1,29 +1,33 @@
 name: Deploy
 
-# Deploys the orchestrator to the production VPS after CI passes.
-# Uses the same scripts/deploy-prod.sh run manually (SSH -> git pull -> build/up).
+# Pipeline: CI gate -> build+push image to GHCR -> SSH to VPS (write .env, login,
+# docker compose pull + up) -> live health check.
 #
-# Required repo secrets (Settings -> Environments -> production):
-#   DEPLOY_SSH_HOST   VPS IP or hostname
-#   DEPLOY_SSH_USER   ssh user (e.g. deploy)
-#   DEPLOY_SSH_KEY    private key (PEM) whose public half is in authorized_keys
-#   DEPLOY_PATH       repo checkout path on the VPS (default: /srv/email)
-#
-# Optional (only if you switch to a registry-pull model instead of build-on-VPS):
-#   GITHUB_TOKEN has packages:write for GHCR push (see alternative job commented below)
+# Required repo/environment secrets (Settings -> Environments -> production):
+#   DEPLOY_SSH_HOST       bare VPS IPv4 (no port/scheme/whitespace)
+#   DEPLOY_SSH_USER       ssh user (deploy or root) whose authorized_keys has the key
+#   DEPLOY_SSH_KEY        private key PEM (passphrase-less), newlines intact
+#   DATABASE_URL          prod orchestrator connection string (email_app role)
+#   BREVO_WEBHOOK_SECRET  shared secret used in the webhook URL path
+#   GHCR_USER             GitHub username that owns the private image (ranjitd-sys)
+#   GHCR_PULL_TOKEN       PAT with read:packages (omit if the GHCR package is public)
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Redeploy an existing image tag (rollback). Blank = latest sha."
+        required: false
 
-# Only one production deploy at a time; don't cancel mid-deploy.
+# Only one production deploy at a time; never cancel mid-deploy.
 concurrency:
   group: deploy-production
   cancel-in-progress: false
 
-permissions:
-  contents: read
+env:
+  IMAGE: ghcr.io/ranjitd-sys/email_orchestrator
 
 jobs:
   ci-gate:
@@ -38,32 +42,90 @@ jobs:
       - run: bun run test:runtime
       - run: bun run lint
 
-  deploy:
-    name: Deploy to VPS
+  build-and-push:
+    name: Build image + push to GHCR
     needs: ci-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to VPS (pull from GHCR)
+    needs: build-and-push
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: production
     steps:
-      - name: SSH deploy (git pull + build + migrate + up)
+      - uses: actions/checkout@v6
+
+      - name: Ship infra files to VPS
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "docker-compose.prod.yml,Caddyfile"
+          target: /srv/email
+          overwrite: true
+
+      - name: Ship deploy script to VPS
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "scripts/deploy-prod.sh"
+          target: /srv/email/scripts
+          overwrite: true
+
+      - name: Write .env from secrets + deploy
         uses: appleboy/ssh-action@v1
         env:
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          IMAGE_TAG: ${{ github.event.inputs.image_tag || github.sha }}
         with:
           host: ${{ secrets.DEPLOY_SSH_HOST }}
           username: ${{ secrets.DEPLOY_SSH_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: DEPLOY_PATH
+          envs: DATABASE_URL,BREVO_WEBHOOK_SECRET,GHCR_USER,GHCR_PULL_TOKEN,IMAGE_TAG
+          script_stop: true
           script: |
             set -euo pipefail
-            APP_DIR="${DEPLOY_PATH:-/srv/email}"
-            cd "$APP_DIR"
-            git fetch --all --prune
-            git checkout main
-            git pull --ff-only origin main
+            mkdir -p /srv/email
+            cd /srv/email
+            umask 077
+            {
+              echo "DATABASE_URL=$DATABASE_URL"
+              echo "BREVO_WEBHOOK_SECRET=$BREVO_WEBHOOK_SECRET"
+              echo "PORT=3000"
+            } > .env
+            chmod 600 .env
             bash scripts/deploy-prod.sh
 
-      - name: Post-deploy health check
+      - name: Live health check
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.DEPLOY_SSH_HOST }}
@@ -71,5 +133,5 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -euo pipefail
-            curl -fsS --retry 5 --retry-delay 2 --retry-all-errors \
+            curl -fsS --retry 8 --retry-delay 3 --retry-all-errors \
               https://event.deepecom.shop/health && echo

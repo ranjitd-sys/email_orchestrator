@@ -2,10 +2,7 @@ name: email-orchestrator
 
 services:
   orchestrator:
-    image: email-orchestrator:prod
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/ranjitd-sys/email_orchestrator:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env
     healthcheck:
